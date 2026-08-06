@@ -183,7 +183,6 @@ You can set several other environment variables:
 * `SMTP_USER`: The SMTP server user to send emails.
 * `SMTP_PASSWORD`: The SMTP server password to send emails.
 * `EMAILS_FROM_EMAIL`: The email account to send emails from.
-* `POSTGRES_SERVER`: The hostname of the PostgreSQL server. You can leave the default of `db`, provided by the same Docker Compose. You normally wouldn't need to change this unless you are using a third-party provider.
 * `POSTGRES_PORT`: The port of the PostgreSQL server. You can leave the default. You normally wouldn't need to change this unless you are using a third-party provider.
 * `POSTGRES_USER`: The Postgres user, you can leave the default.
 * `POSTGRES_DB`: The database name to use for this application. You can leave the default of `app`.
@@ -331,8 +330,6 @@ Backend API docs: `https://api.fastapi-project.example.com/docs`
 
 Backend API base URL: `https://api.fastapi-project.example.com`
 
-Adminer: `https://adminer.fastapi-project.example.com`
-
 ### Staging
 
 Frontend: `https://dashboard.staging.fastapi-project.example.com`
@@ -340,5 +337,3 @@ Frontend: `https://dashboard.staging.fastapi-project.example.com`
 Backend API docs: `https://api.staging.fastapi-project.example.com/docs`
 
 Backend API base URL: `https://api.staging.fastapi-project.example.com`
-
-Adminer: `https://adminer.staging.fastapi-project.example.com`
