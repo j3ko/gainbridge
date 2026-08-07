@@ -1,5 +1,7 @@
 .vscode/*
 !.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
 node_modules/
 /test-results/
 /playwright-report/

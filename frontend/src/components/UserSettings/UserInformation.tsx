@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
-import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 import { cn } from "@/lib/utils"
 import { handleError } from "@/utils"
@@ -32,15 +31,14 @@ const UserInformation = () => {
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const [editMode, setEditMode] = useState(false)
-  const { user: currentUser } = useAuth()
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
-      full_name: currentUser?.full_name ?? undefined,
-      email: currentUser?.email,
+      full_name: "",
+      email: "",
     },
   })
 
@@ -65,12 +63,12 @@ const UserInformation = () => {
     const updateData: UserUpdateMe = {}
 
     // only include fields that have changed
-    if (data.full_name !== currentUser?.full_name) {
-      updateData.full_name = data.full_name
-    }
-    if (data.email !== currentUser?.email) {
-      updateData.email = data.email
-    }
+    // if (data.full_name !== currentUser?.full_name) {
+    //   updateData.full_name = data.full_name
+    // }
+    // if (data.email !== currentUser?.email) {
+    //   updateData.email = data.email
+    // }
 
     mutation.mutate(updateData)
   }

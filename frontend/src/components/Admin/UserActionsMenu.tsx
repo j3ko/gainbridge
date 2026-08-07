@@ -8,7 +8,6 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import useAuth from "@/hooks/useAuth"
 import DeleteUser from "./DeleteUser"
 import EditUser from "./EditUser"
 
@@ -18,11 +17,6 @@ interface UserActionsMenuProps {
 
 export const UserActionsMenu = ({ user }: UserActionsMenuProps) => {
   const [open, setOpen] = useState(false)
-  const { user: currentUser } = useAuth()
-
-  if (user.id === currentUser?.id) {
-    return null
-  }
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>

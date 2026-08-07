@@ -7,13 +7,13 @@
 	"features": {
 		"ghcr.io/devcontainers-extra/features/uv:1": {},
 		"ghcr.io/devcontainers-extra/features/bun:1": {}
-	}
+	},
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+	"forwardPorts": [8000, 5173]
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "postCreateCommand": "pip3 install --user -r requirements.txt",

@@ -16,7 +16,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import useAuth from "@/hooks/useAuth"
 import { getInitials } from "@/utils"
 
 interface UserInfoProps {
@@ -41,7 +40,6 @@ function UserInfo({ fullName, email }: UserInfoProps) {
 }
 
 export function User({ user }: { user: any }) {
-  const { logout } = useAuth()
   const { isMobile, setOpenMobile } = useSidebar()
 
   if (!user) return null
@@ -52,7 +50,6 @@ export function User({ user }: { user: any }) {
     }
   }
   const handleLogout = async () => {
-    logout()
   }
 
   return (
