@@ -2,8 +2,14 @@
 !.vscode/extensions.json
 !.vscode/launch.json
 !.vscode/tasks.json
+
 node_modules/
 /test-results/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+*.db
+*.sqlite
+*.sqlite3
+gainbridge.db

@@ -2,127 +2,208 @@ from __future__ import annotations
 
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 from typing import Optional
 
-from app.schemas.gain import (
-    JobCreate,
-    JobInfo,
-    JobStatus,
-    SourceConfig,
-    SourceType,
-)
+from sqlmodel import Session, select, col
+
+from app.core.db import engine
+from app.models import Job, JobCreate, Source, SourceCreate
 from app.services.plex import PlexService
 from app.services.jellyfin import JellyfinService
 from app.services.tagger import TaggerService
 
 
-class JobManager:
-    """In-memory job runner (good enough for v1)."""
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
-    def __init__(self):
-        self._jobs: dict[str, JobInfo] = {}
-        self._sources: dict[str, SourceConfig] = {}
-        self._executor = ThreadPoolExecutor(max_workers=1)  # sequential writes are safer
+
+class JobManager:
+    def __init__(self) -> None:
+        self._executor = ThreadPoolExecutor(max_workers=1)
         self._tagger = TaggerService()
 
     # ----- sources -----
-    def add_source(self, cfg: SourceConfig) -> SourceConfig:
-        self._sources[cfg.name] = cfg
-        return cfg
+    def add_source(self, session: Session, data: SourceCreate) -> Source:
+        existing = session.exec(select(Source).where(Source.name == data.name)).first()
+        if existing:
+            for k, v in data.model_dump().items():
+                setattr(existing, k, v)
+            existing.updated_at = _utcnow()
+            session.add(existing)
+            session.commit()
+            session.refresh(existing)
+            return existing
+        source = Source.model_validate(data)
+        session.add(source)
+        session.commit()
+        session.refresh(source)
+        return source
 
-    def list_sources(self) -> list[SourceConfig]:
-        return list(self._sources.values())
+    def list_sources(self, session: Session) -> list[Source]:
+        return list(session.exec(select(Source).order_by(Source.name)).all())
 
-    def get_source(self, name: str) -> Optional[SourceConfig]:
-        return self._sources.get(name)
+    def get_source(self, session: Session, name: str) -> Optional[Source]:
+        return session.exec(select(Source).where(Source.name == name)).first()
 
-    def test_source(self, name: str) -> dict:
-        cfg = self._sources[name]
-        if cfg.type == SourceType.plex:
-            svc = PlexService(cfg.base_url, cfg.token)
+    def delete_source(self, session: Session, name: str) -> bool:
+        source = self.get_source(session, name)
+        if not source:
+            return False
+        session.delete(source)
+        session.commit()
+        return True
+
+    def test_source(self, session: Session, name: str) -> dict:
+        cfg = self.get_source(session, name)
+        if not cfg:
+            raise KeyError(name)
+        if cfg.type == "plex":
+            return PlexService(cfg.base_url, cfg.token).test_connection()
+        svc = JellyfinService(cfg.base_url, cfg.token, user_id=cfg.user_id)
+        try:
             return svc.test_connection()
-        else:
-            svc = JellyfinService(cfg.base_url, cfg.token)
-            try:
-                return svc.test_connection()
-            finally:
-                svc.close()
-
-    # ----- jobs -----
-    def create_job(self, body: JobCreate) -> JobInfo:
-        if body.source_name not in self._sources:
-            raise ValueError(f"Unknown source: {body.source_name}")
-        job = JobInfo(
-            id=str(uuid.uuid4()),
-            status=JobStatus.pending,
-            source_name=body.source_name,
-            dry_run=body.dry_run,
-        )
-        self._jobs[job.id] = job
-        self._executor.submit(self._run_job, job.id, body)
-        return job
-
-    def get_job(self, job_id: str) -> Optional[JobInfo]:
-        return self._jobs.get(job_id)
-
-    def list_jobs(self) -> list[JobInfo]:
-        return list(self._jobs.values())
-
-    def _run_job(self, job_id: str, body: JobCreate) -> None:
-        job = self._jobs[job_id]
-        job.status = JobStatus.running
-        cfg = self._sources[body.source_name]
-
-        try:
-            if cfg.type == SourceType.plex:
-                self._run_plex(job, cfg, body)
-            else:
-                self._run_jellyfin(job, cfg, body)
-            job.status = JobStatus.completed
-            job.message = "Done"
-        except Exception as e:
-            job.status = JobStatus.failed
-            job.message = str(e)
-
-    def _run_plex(self, job: JobInfo, cfg: SourceConfig, body: JobCreate) -> None:
-        svc = PlexService(cfg.base_url, cfg.token)
-        tracks = list(svc.iter_tracks(body.library_id))
-        job.total = len(tracks)
-
-        for track in tracks:
-            info = svc.get_track_info(track)
-            self._process_track(job, info, body.overwrite_existing)
-
-    def _run_jellyfin(self, job: JobInfo, cfg: SourceConfig, body: JobCreate) -> None:
-        svc = JellyfinService(cfg.base_url, cfg.token)
-        try:
-            items = list(svc.iter_audio_items(body.library_id))
-            job.total = len(items)
-            for item in items:
-                info = svc.get_track_info(item)
-                self._process_track(job, info, body.overwrite_existing)
         finally:
             svc.close()
 
-    def _process_track(self, job: JobInfo, info, overwrite: bool) -> None:
-        job.processed += 1
+    # ----- jobs -----
+    def create_job(self, session: Session, body: JobCreate) -> Job:
+        if not self.get_source(session, body.source_name):
+            raise ValueError(f"Unknown source: {body.source_name}")
+
+        job_id = str(uuid.uuid4())
+        job = Job(
+            id=job_id,
+            source_name=body.source_name,
+            library_id=body.library_id,
+            dry_run=body.dry_run,
+            overwrite_existing=body.overwrite_existing,
+            status="pending",
+        )
+        session.add(job)
+        session.commit()
+        session.refresh(job)
+
+        self._executor.submit(self._run_job, job_id)
+        return job
+
+    def get_job(self, session: Session, job_id: str) -> Optional[Job]:
+        return session.get(Job, job_id)
+
+    def list_jobs(self, session: Session) -> list[Job]:
+        statement = select(Job).order_by(col(Job.created_at).desc())
+        return list(session.exec(statement).all())
+
+    def _update_job(self, job_id: str, **fields) -> None:
+        with Session(engine) as session:
+            job = session.get(Job, job_id)
+            if not job:
+                return
+            for k, v in fields.items():
+                setattr(job, k, v)
+            job.updated_at = _utcnow()
+            session.add(job)
+            session.commit()
+
+    def _run_job(self, job_id: str) -> None:
+        self._update_job(job_id, status="running", message="Running")
+
+        with Session(engine) as session:
+            job = session.get(Job, job_id)
+            if not job:
+                return
+            cfg = self.get_source(session, job.source_name)
+            if not cfg:
+                self._update_job(job_id, status="failed", message="Source missing")
+                return
+
+            # snapshot values for the worker thread
+            source_type = cfg.type
+            base_url = cfg.base_url
+            token = cfg.token
+            user_id = cfg.user_id
+            library_id = job.library_id
+            dry_run = job.dry_run
+            overwrite = job.overwrite_existing
+
+        try:
+            if source_type == "plex":
+                self._run_plex(job_id, base_url, token, library_id, dry_run, overwrite)
+            else:
+                self._run_jellyfin(
+                    job_id, base_url, token, user_id, library_id, dry_run, overwrite
+                )
+            self._update_job(job_id, status="completed", message="Done")
+        except Exception as e:
+            self._update_job(job_id, status="failed", message=str(e))
+
+    def _bump(self, job_id: str, **deltas) -> None:
+        """Increment counters safely in a short transaction."""
+        with Session(engine) as session:
+            job = session.get(Job, job_id)
+            if not job:
+                return
+            for k, v in deltas.items():
+                setattr(job, k, getattr(job, k) + v)
+            job.updated_at = _utcnow()
+            session.add(job)
+            session.commit()
+
+    def _run_plex(
+        self,
+        job_id: str,
+        base_url: str,
+        token: str,
+        library_id: Optional[str],
+        dry_run: bool,
+        overwrite: bool,
+    ) -> None:
+        svc = PlexService(base_url, token)
+        tracks = list(svc.iter_tracks(library_id))
+        self._update_job(job_id, total=len(tracks))
+
+        for track in tracks:
+            info = svc.get_track_info(track)
+            self._process_track(job_id, info, dry_run, overwrite)
+
+    def _run_jellyfin(
+        self,
+        job_id: str,
+        base_url: str,
+        token: str,
+        user_id: Optional[str],
+        library_id: Optional[str],
+        dry_run: bool,
+        overwrite: bool,
+    ) -> None:
+        svc = JellyfinService(base_url, token, user_id=user_id)
+        try:
+            items = list(svc.iter_audio_items(library_id))
+            self._update_job(job_id, total=len(items))
+            for item in items:
+                info = svc.get_track_info(item)
+                self._process_track(job_id, info, dry_run, overwrite)
+        finally:
+            svc.close()
+
+    def _process_track(self, job_id: str, info, dry_run: bool, overwrite: bool) -> None:
+        self._bump(job_id, processed=1)
         if not info.path or not info.loudness:
-            job.skipped += 1
+            self._bump(job_id, skipped=1)
             return
         result = self._tagger.write_replaygain(
             info.path,
             info.loudness,
             overwrite=overwrite,
-            dry_run=job.dry_run,
+            dry_run=dry_run,
         )
         if result.success:
             if "Skipped" in result.message:
-                job.skipped += 1
+                self._bump(job_id, skipped=1)
             else:
-                job.written += 1
+                self._bump(job_id, written=1)
         else:
-            job.errors += 1
+            self._bump(job_id, errors=1)
 
 
-# Singleton used by API routes
 job_manager = JobManager()

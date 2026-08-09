@@ -1,33 +1,19 @@
-from sqlmodel import Session, create_engine, select
-
-from app import crud
+from sqlmodel import Session, create_engine, SQLModel
 from app.core.config import settings
-from app.models import User, UserCreate
 
-engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
-
-
-# make sure all SQLModel models are imported (app.models) before initializing DB
-# otherwise, SQLModel might fail to initialize relationships properly
-# for more details: https://github.com/fastapi/full-stack-fastapi-template/issues/28
+connect_args = {"check_same_thread": False}  # required for SQLite + FastAPI
+engine = create_engine(
+    str(settings.SQLALCHEMY_DATABASE_URI),
+    connect_args=connect_args,
+)
 
 
-def init_db(session: Session) -> None:
-    # Tables should be created with Alembic migrations
-    # But if you don't want to use migrations, create
-    # the tables un-commenting the next lines
-    # from sqlmodel import SQLModel
+def init_db() -> None:
+    # Import models so metadata is registered
+    from app.models import Source, Job  # noqa: F401
+    SQLModel.metadata.create_all(engine)
 
-    # This works because the models are already imported and registered from app.models
-    # SQLModel.metadata.create_all(engine)
 
-    user = session.exec(
-        select(User).where(User.email == settings.FIRST_SUPERUSER)
-    ).first()
-    if not user:
-        user_in = UserCreate(
-            email=settings.FIRST_SUPERUSER,
-            password=settings.FIRST_SUPERUSER_PASSWORD,
-            is_superuser=True,
-        )
-        user = crud.create_user(session=session, user_create=user_in)
+def get_session():
+    with Session(engine) as session:
+        yield session
