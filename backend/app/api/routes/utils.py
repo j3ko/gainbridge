@@ -1,6 +1,4 @@
-from fastapi import APIRouter, Depends
-from pydantic.networks import EmailStr
-from app.models import Message
+from fastapi import APIRouter
 
 router = APIRouter(prefix="/utils", tags=["utils"])
 
