@@ -27,5 +27,5 @@ export default defineConfig({
       host: "localhost",
       clientPort: 5173,
     },
-  }
+  },
 })

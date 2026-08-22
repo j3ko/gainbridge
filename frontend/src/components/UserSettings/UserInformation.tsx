@@ -59,7 +59,7 @@ const UserInformation = () => {
     },
   })
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = (_data: FormData) => {
     const updateData: UserUpdateMe = {}
 
     // only include fields that have changed

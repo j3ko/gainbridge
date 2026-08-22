@@ -49,8 +49,7 @@ export function User({ user }: { user: any }) {
       setOpenMobile(false)
     }
   }
-  const handleLogout = async () => {
-  }
+  const handleLogout = async () => {}
 
   return (
     <SidebarMenu>

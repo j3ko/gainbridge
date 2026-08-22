@@ -1,4 +1,4 @@
-import { Briefcase, Home, Users } from "lucide-react"
+import { Home, Logs } from "lucide-react"
 
 import { SidebarAppearance } from "@/components/Common/Appearance"
 import { Logo } from "@/components/Common/Logo"
@@ -12,12 +12,11 @@ import { type Item, Main } from "./Main"
 
 const baseItems: Item[] = [
   { icon: Home, title: "Dashboard", path: "/" },
-  { icon: Briefcase, title: "Items", path: "/items" },
+  { icon: Logs, title: "Logs", path: "/logs" },
 ]
 
 export function AppSidebar() {
-
-  const items = [...baseItems, { icon: Users, title: "Admin", path: "/admin" }]
+  const items = [...baseItems]
 
   return (
     <Sidebar collapsible="icon">
