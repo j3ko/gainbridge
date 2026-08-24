@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from app.api.deps import SessionDep
-from app.models import SourceCreate, SourcePublic
+from app.models import ScheduleUpdate, SourceCreate, SourcePublic
 from app.services.jobs import job_manager
 from app.services.plex import PlexService
 from app.services.jellyfin import JellyfinService
@@ -24,6 +24,26 @@ def delete_source(session: SessionDep, name: str):
     if not job_manager.delete_source(session, name):
         raise HTTPException(404, "Source not found")
     return {"ok": True}
+
+
+@router.put("/{name}/schedule", response_model=SourcePublic)
+def set_schedule(session: SessionDep, name: str, body: ScheduleUpdate):
+    try:
+        return job_manager.set_schedule(
+            session, name, body.schedule_cron, body.schedule_enabled
+        )
+    except KeyError:
+        raise HTTPException(404, "Source not found")
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+
+@router.delete("/{name}/schedule", response_model=SourcePublic)
+def clear_schedule(session: SessionDep, name: str):
+    try:
+        return job_manager.clear_schedule(session, name)
+    except KeyError:
+        raise HTTPException(404, "Source not found")
 
 
 @router.post("/{name}/test")

@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import DeleteSource from "../Sources/DeleteSource"
 import EditSource from "../Sources/EditSource"
+import ScheduleSource from "../Sources/ScheduleSource"
 import SyncSource from "../Sources/SyncSource"
 
 interface SourceActionsMenuProps {
@@ -28,6 +29,7 @@ export const SourceActionsMenu = ({ source }: SourceActionsMenuProps) => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <SyncSource source={source} onSuccess={() => setOpen(false)} />
+        <ScheduleSource source={source} onSuccess={() => setOpen(false)} />
         <EditSource source={source} onSuccess={() => setOpen(false)} />
         <DeleteSource name={source.name} onSuccess={() => setOpen(false)} />
       </DropdownMenuContent>

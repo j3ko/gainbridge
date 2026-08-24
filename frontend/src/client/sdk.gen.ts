@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { JobsListJobsResponse, JobsCreateJobData, JobsCreateJobResponse, JobsGetJobData, JobsGetJobResponse, SourcesListSourcesResponse, SourcesAddSourceData, SourcesAddSourceResponse, SourcesDeleteSourceData, SourcesDeleteSourceResponse, SourcesTestSourceData, SourcesTestSourceResponse, SourcesListLibrariesData, SourcesListLibrariesResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { JobsListJobsResponse, JobsCreateJobData, JobsCreateJobResponse, JobsGetJobData, JobsGetJobResponse, SourcesListSourcesResponse, SourcesAddSourceData, SourcesAddSourceResponse, SourcesDeleteSourceData, SourcesDeleteSourceResponse, SourcesSetScheduleData, SourcesSetScheduleResponse, SourcesClearScheduleData, SourcesClearScheduleResponse, SourcesTestSourceData, SourcesTestSourceResponse, SourcesListLibrariesData, SourcesListLibrariesResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class JobsService {
     /**
@@ -101,6 +101,49 @@ export class SourcesService {
         return __request(OpenAPI, {
             method: 'DELETE',
             url: '/api/v1/sources/{name}',
+            path: {
+                name: data.name
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Set Schedule
+     * @param data The data for the request.
+     * @param data.name
+     * @param data.requestBody
+     * @returns SourcePublic Successful Response
+     * @throws ApiError
+     */
+    public static setSchedule(data: SourcesSetScheduleData): CancelablePromise<SourcesSetScheduleResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/sources/{name}/schedule',
+            path: {
+                name: data.name
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Clear Schedule
+     * @param data The data for the request.
+     * @param data.name
+     * @returns SourcePublic Successful Response
+     * @throws ApiError
+     */
+    public static clearSchedule(data: SourcesClearScheduleData): CancelablePromise<SourcesClearScheduleResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/sources/{name}/schedule',
             path: {
                 name: data.name
             },

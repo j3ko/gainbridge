@@ -15,12 +15,17 @@ class SourceBase(SQLModel):
     enabled: bool = True
     # jellyfin optional
     user_id: Optional[str] = None
+    # cron schedule
+    schedule_cron: Optional[str] = None
+    schedule_enabled: bool = False
 
 
 class Source(SourceBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
+    next_run_at: Optional[datetime] = None
+    last_run_at: Optional[datetime] = None
 
 
 class SourceCreate(SourceBase):
@@ -30,6 +35,13 @@ class SourceCreate(SourceBase):
 class SourcePublic(SourceBase):
     id: int
     created_at: datetime
+    next_run_at: Optional[datetime] = None
+    last_run_at: Optional[datetime] = None
+
+
+class ScheduleUpdate(SQLModel):
+    schedule_cron: str
+    schedule_enabled: bool = True
 
 class JobBase(SQLModel):
     source_name: str = Field(index=True)

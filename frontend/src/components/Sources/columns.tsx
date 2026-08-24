@@ -2,6 +2,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 import { Check, Copy } from "lucide-react"
 
 import type { SourcePublic } from "@/client"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard"
 import { cn } from "@/lib/utils"
@@ -51,6 +52,28 @@ export const columns: ColumnDef<SourcePublic>[] = [
         >
           {type || "No type"}
         </span>
+      )
+    },
+  },
+  {
+    accessorKey: "schedule_cron",
+    header: "Schedule",
+    cell: ({ row }) => {
+      const { schedule_enabled, schedule_cron, next_run_at } = row.original
+      if (!schedule_enabled || !schedule_cron) {
+        return <Badge variant="outline">Off</Badge>
+      }
+      return (
+        <div className="flex flex-col gap-0.5">
+          <Badge variant="secondary" className="font-mono">
+            {schedule_cron}
+          </Badge>
+          {next_run_at && (
+            <span className="text-xs text-muted-foreground">
+              Next: {new Date(next_run_at).toLocaleString()}
+            </span>
+          )}
+        </div>
       )
     },
   },

@@ -34,6 +34,11 @@ export type LibraryInfo = {
     type?: string;
 };
 
+export type ScheduleUpdate = {
+    schedule_cron: string;
+    schedule_enabled?: boolean;
+};
+
 export type SourceCreate = {
     name: string;
     type: string;
@@ -41,6 +46,8 @@ export type SourceCreate = {
     token: string;
     enabled?: boolean;
     user_id?: (string | null);
+    schedule_cron?: (string | null);
+    schedule_enabled?: boolean;
 };
 
 export type SourcePublic = {
@@ -50,8 +57,12 @@ export type SourcePublic = {
     token: string;
     enabled?: boolean;
     user_id?: (string | null);
+    schedule_cron?: (string | null);
+    schedule_enabled?: boolean;
     id: number;
     created_at: string;
+    next_run_at?: (string | null);
+    last_run_at?: (string | null);
 };
 
 export type ValidationError = {
@@ -87,6 +98,19 @@ export type SourcesDeleteSourceData = {
 };
 
 export type SourcesDeleteSourceResponse = (unknown);
+
+export type SourcesSetScheduleData = {
+    name: string;
+    requestBody: ScheduleUpdate;
+};
+
+export type SourcesSetScheduleResponse = (SourcePublic);
+
+export type SourcesClearScheduleData = {
+    name: string;
+};
+
+export type SourcesClearScheduleResponse = (SourcePublic);
 
 export type SourcesTestSourceData = {
     name: string;

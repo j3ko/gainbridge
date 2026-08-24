@@ -1,3 +1,6 @@
+import asyncio
+import contextlib
+import logging
 import sentry_sdk
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -7,6 +10,9 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
 from app.core.config import settings
+from app.services.jobs import job_manager
+
+logger = logging.getLogger(__name__)
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -16,10 +22,24 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
     sentry_sdk.init(dsn=str(settings.SENTRY_DSN), enable_tracing=True)
 
+
+async def _scheduler_loop() -> None:
+    while True:
+        try:
+            await asyncio.to_thread(job_manager.run_due_schedules)
+        except Exception:
+            logger.exception("scheduler tick failed")
+        await asyncio.sleep(60)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    task = asyncio.create_task(_scheduler_loop())
     yield
+    task.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await task
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

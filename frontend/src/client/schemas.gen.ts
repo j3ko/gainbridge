@@ -150,6 +150,23 @@ export const LibraryInfoSchema = {
     title: 'LibraryInfo'
 } as const;
 
+export const ScheduleUpdateSchema = {
+    properties: {
+        schedule_cron: {
+            type: 'string',
+            title: 'Schedule Cron'
+        },
+        schedule_enabled: {
+            type: 'boolean',
+            title: 'Schedule Enabled',
+            default: true
+        }
+    },
+    type: 'object',
+    required: ['schedule_cron'],
+    title: 'ScheduleUpdate'
+} as const;
+
 export const SourceCreateSchema = {
     properties: {
         name: {
@@ -183,6 +200,22 @@ export const SourceCreateSchema = {
                 }
             ],
             title: 'User Id'
+        },
+        schedule_cron: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Schedule Cron'
+        },
+        schedule_enabled: {
+            type: 'boolean',
+            title: 'Schedule Enabled',
+            default: false
         }
     },
     type: 'object',
@@ -224,6 +257,22 @@ export const SourcePublicSchema = {
             ],
             title: 'User Id'
         },
+        schedule_cron: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Schedule Cron'
+        },
+        schedule_enabled: {
+            type: 'boolean',
+            title: 'Schedule Enabled',
+            default: false
+        },
         id: {
             type: 'integer',
             title: 'Id'
@@ -232,6 +281,30 @@ export const SourcePublicSchema = {
             type: 'string',
             format: 'date-time',
             title: 'Created At'
+        },
+        next_run_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Next Run At'
+        },
+        last_run_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Last Run At'
         }
     },
     type: 'object',

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import logging
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Optional
 
+from croniter import croniter
 from sqlmodel import Session, select, col
 
 from app.core.db import engine
@@ -13,9 +15,15 @@ from app.services.plex import PlexService
 from app.services.jellyfin import JellyfinService
 from app.services.tagger import TaggerService
 
+logger = logging.getLogger(__name__)
+
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _compute_next_run(cron_expr: str, base: Optional[datetime] = None) -> datetime:
+    return croniter(cron_expr, base or _utcnow()).get_next(datetime)
 
 
 class JobManager:
@@ -54,6 +62,36 @@ class JobManager:
         session.commit()
         return True
 
+    def set_schedule(
+        self, session: Session, name: str, cron_expr: str, enabled: bool
+    ) -> Source:
+        source = self.get_source(session, name)
+        if not source:
+            raise KeyError(name)
+        if not croniter.is_valid(cron_expr):
+            raise ValueError(f"Invalid cron expression: {cron_expr}")
+        source.schedule_cron = cron_expr
+        source.schedule_enabled = enabled
+        source.next_run_at = _compute_next_run(cron_expr) if enabled else None
+        source.updated_at = _utcnow()
+        session.add(source)
+        session.commit()
+        session.refresh(source)
+        return source
+
+    def clear_schedule(self, session: Session, name: str) -> Source:
+        source = self.get_source(session, name)
+        if not source:
+            raise KeyError(name)
+        source.schedule_cron = None
+        source.schedule_enabled = False
+        source.next_run_at = None
+        source.updated_at = _utcnow()
+        session.add(source)
+        session.commit()
+        session.refresh(source)
+        return source
+
     def test_source(self, session: Session, name: str) -> dict:
         cfg = self.get_source(session, name)
         if not cfg:
@@ -67,9 +105,21 @@ class JobManager:
             svc.close()
 
     # ----- jobs -----
-    def create_job(self, session: Session, body: JobCreate) -> Job:
+    def create_job(
+        self, session: Session, body: JobCreate, skip_if_running: bool = False
+    ) -> Optional[Job]:
         if not self.get_source(session, body.source_name):
             raise ValueError(f"Unknown source: {body.source_name}")
+
+        if skip_if_running:
+            existing = session.exec(
+                select(Job).where(
+                    Job.source_name == body.source_name,
+                    col(Job.status).in_(["pending", "running"]),
+                )
+            ).first()
+            if existing:
+                return None
 
         job_id = str(uuid.uuid4())
         job = Job(
@@ -86,6 +136,38 @@ class JobManager:
 
         self._executor.submit(self._run_job, job_id)
         return job
+
+    def run_due_schedules(self) -> None:
+        now = _utcnow()
+        with Session(engine) as session:
+            due = session.exec(
+                select(Source).where(
+                    Source.schedule_enabled == True,  # noqa: E712
+                    col(Source.next_run_at) <= now,
+                )
+            ).all()
+            for source in due:
+                assert source.schedule_cron is not None
+                job = self.create_job(
+                    session,
+                    JobCreate(
+                        source_name=source.name,
+                        dry_run=False,
+                        overwrite_existing=False,
+                    ),
+                    skip_if_running=True,
+                )
+                if job is not None:
+                    source.last_run_at = now
+                else:
+                    logger.info(
+                        "skipping scheduled sync for %s: a job is already running",
+                        source.name,
+                    )
+                source.next_run_at = _compute_next_run(source.schedule_cron, base=now)
+                source.updated_at = now
+                session.add(source)
+                session.commit()
 
     def get_job(self, session: Session, job_id: str) -> Optional[Job]:
         return session.get(Job, job_id)
