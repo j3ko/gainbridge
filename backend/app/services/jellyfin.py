@@ -47,7 +47,9 @@ class JellyfinService:
                 libs.append(LibraryInfo(id=item["Id"], name=item["Name"]))
         return libs
 
-    def iter_audio_items(self, library_id: str | None = None) -> Iterator[dict[str, Any]]:
+    def iter_audio_items(
+        self, library_id: str | None = None
+    ) -> Iterator[dict[str, Any]]:
         uid = self.ensure_user_id()
         start = 0
         limit = 200

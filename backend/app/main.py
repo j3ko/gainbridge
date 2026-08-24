@@ -43,6 +43,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     with contextlib.suppress(asyncio.CancelledError):
         await task
 
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",

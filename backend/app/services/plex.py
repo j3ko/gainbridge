@@ -76,7 +76,6 @@ class PlexService:
         except Exception:
             return None
 
-
     def _file_path(self, track: Track) -> str | None:
         try:
             media_list = getattr(track, "media", None) or []
@@ -95,7 +94,8 @@ class PlexService:
         return TrackInfo(
             id=str(track.ratingKey),
             title=track.title or "",
-            artist=getattr(track, "grandparentTitle", None) or getattr(track, "originalTitle", None),
+            artist=getattr(track, "grandparentTitle", None)
+            or getattr(track, "originalTitle", None),
             album=getattr(track, "parentTitle", None),
             path=path,
             loudness=self._extract_loudness(track),

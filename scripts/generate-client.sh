@@ -8,4 +8,4 @@ uv run python -c "import app.main; import json; print(json.dumps(app.main.app.op
 cd ..
 mv openapi.json frontend/
 bun run --filter frontend generate-client
-bun run lint
+bun run --filter frontend format

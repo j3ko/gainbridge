@@ -30,9 +30,7 @@ def delete_source(session: SessionDep, name: str) -> dict[str, bool]:
 
 
 @router.put("/{name}/schedule", response_model=SourcePublic)
-def set_schedule(
-    session: SessionDep, name: str, body: ScheduleUpdate
-) -> Source:
+def set_schedule(session: SessionDep, name: str, body: ScheduleUpdate) -> Source:
     try:
         return job_manager.set_schedule(
             session, name, body.schedule_cron, body.schedule_enabled

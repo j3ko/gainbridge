@@ -43,12 +43,15 @@ class ScheduleUpdate(SQLModel):
     schedule_cron: str
     schedule_enabled: bool = True
 
+
 class JobBase(SQLModel):
     source_name: str = Field(index=True)
     library_id: str | None = None
     dry_run: bool = True
     overwrite_existing: bool = False
-    status: str = Field(default="pending", index=True)  # pending|running|completed|failed|cancelled
+    status: str = Field(
+        default="pending", index=True
+    )  # pending|running|completed|failed|cancelled
     total: int = 0
     processed: int = 0
     written: int = 0

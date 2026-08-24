@@ -1,9 +1,9 @@
-
 from pydantic import BaseModel, Field
 
 
 class LoudnessInfo(BaseModel):
     """Normalized loudness data"""
+
     track_gain_db: float | None = None
     track_peak: float | None = None
     album_gain_db: float | None = None
