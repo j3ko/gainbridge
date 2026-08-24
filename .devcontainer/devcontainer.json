@@ -15,10 +15,12 @@
 	// "features": {},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [8000, 5173]
+	"forwardPorts": [8000, 5173],
 
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "pip3 install --user -r requirements.txt",
+	// Install Playwright's Chromium build + its system deps once at container creation,
+	// so browser-driven checks (e.g. Playwright tests, or an agent verifying the UI) don't
+	// need to install anything on demand.
+	"postCreateCommand": "cd frontend && bunx playwright install --with-deps chromium"
 
 	// Configure tool-specific properties.
 	// "customizations": {},
