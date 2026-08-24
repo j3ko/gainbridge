@@ -150,6 +150,42 @@ export const LibraryInfoSchema = {
     title: 'LibraryInfo'
 } as const;
 
+export const PathMappingCreateSchema = {
+    properties: {
+        remote_path: {
+            type: 'string',
+            title: 'Remote Path'
+        },
+        local_path: {
+            type: 'string',
+            title: 'Local Path'
+        }
+    },
+    type: 'object',
+    required: ['remote_path', 'local_path'],
+    title: 'PathMappingCreate'
+} as const;
+
+export const PathMappingPublicSchema = {
+    properties: {
+        remote_path: {
+            type: 'string',
+            title: 'Remote Path'
+        },
+        local_path: {
+            type: 'string',
+            title: 'Local Path'
+        },
+        id: {
+            type: 'integer',
+            title: 'Id'
+        }
+    },
+    type: 'object',
+    required: ['remote_path', 'local_path', 'id'],
+    title: 'PathMappingPublic'
+} as const;
+
 export const ScheduleUpdateSchema = {
     properties: {
         schedule_cron: {
@@ -216,6 +252,14 @@ export const SourceCreateSchema = {
             type: 'boolean',
             title: 'Schedule Enabled',
             default: false
+        },
+        path_mappings: {
+            items: {
+                '$ref': '#/components/schemas/PathMappingCreate'
+            },
+            type: 'array',
+            title: 'Path Mappings',
+            default: []
         }
     },
     type: 'object',
@@ -305,6 +349,14 @@ export const SourcePublicSchema = {
                 }
             ],
             title: 'Last Run At'
+        },
+        path_mappings: {
+            items: {
+                '$ref': '#/components/schemas/PathMappingPublic'
+            },
+            type: 'array',
+            title: 'Path Mappings',
+            default: []
         }
     },
     type: 'object',

@@ -34,6 +34,17 @@ export type LibraryInfo = {
     type?: string;
 };
 
+export type PathMappingCreate = {
+    remote_path: string;
+    local_path: string;
+};
+
+export type PathMappingPublic = {
+    remote_path: string;
+    local_path: string;
+    id: number;
+};
+
 export type ScheduleUpdate = {
     schedule_cron: string;
     schedule_enabled?: boolean;
@@ -48,6 +59,7 @@ export type SourceCreate = {
     user_id?: (string | null);
     schedule_cron?: (string | null);
     schedule_enabled?: boolean;
+    path_mappings?: Array<PathMappingCreate>;
 };
 
 export type SourcePublic = {
@@ -63,6 +75,7 @@ export type SourcePublic = {
     created_at: string;
     next_run_at?: (string | null);
     last_run_at?: (string | null);
+    path_mappings?: Array<PathMappingPublic>;
 };
 
 export type ValidationError = {
@@ -97,7 +110,9 @@ export type SourcesDeleteSourceData = {
     name: string;
 };
 
-export type SourcesDeleteSourceResponse = (unknown);
+export type SourcesDeleteSourceResponse = ({
+    [key: string]: (boolean);
+});
 
 export type SourcesSetScheduleData = {
     name: string;
@@ -116,7 +131,9 @@ export type SourcesTestSourceData = {
     name: string;
 };
 
-export type SourcesTestSourceResponse = (unknown);
+export type SourcesTestSourceResponse = ({
+    [key: string]: unknown;
+});
 
 export type SourcesListLibrariesData = {
     name: string;

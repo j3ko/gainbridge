@@ -19,7 +19,10 @@ def list_sources(session: SessionDep) -> list[Source]:
 
 @router.post("/", response_model=SourcePublic)
 def add_source(session: SessionDep, body: SourceCreate) -> Source:
-    return job_manager.add_source(session, body)
+    try:
+        return job_manager.add_source(session, body)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
 
 
 @router.delete("/{name}")

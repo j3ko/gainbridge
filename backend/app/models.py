@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
 
 def utcnow() -> datetime:
@@ -26,10 +26,14 @@ class Source(SourceBase, table=True):
     updated_at: datetime = Field(default_factory=utcnow)
     next_run_at: datetime | None = None
     last_run_at: datetime | None = None
+    path_mappings: list["PathMapping"] = Relationship(
+        back_populates="source",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
 
 
 class SourceCreate(SourceBase):
-    pass
+    path_mappings: list["PathMappingCreate"] = []
 
 
 class SourcePublic(SourceBase):
@@ -37,6 +41,30 @@ class SourcePublic(SourceBase):
     created_at: datetime
     next_run_at: datetime | None = None
     last_run_at: datetime | None = None
+    path_mappings: list["PathMappingPublic"] = []
+
+
+# A single Plex/Jellyfin library can span multiple folders on disk (e.g. a
+# Music library made up of both /data/music1 and /data/music2), each of
+# which may need its own remote->local translation, so a source can have
+# any number of these (Sonarr/Radarr-style remote path mappings).
+class PathMappingBase(SQLModel):
+    remote_path: str
+    local_path: str
+
+
+class PathMapping(PathMappingBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    source_id: int = Field(foreign_key="source.id", index=True)
+    source: Source = Relationship(back_populates="path_mappings")
+
+
+class PathMappingCreate(PathMappingBase):
+    pass
+
+
+class PathMappingPublic(PathMappingBase):
+    id: int
 
 
 class ScheduleUpdate(SQLModel):

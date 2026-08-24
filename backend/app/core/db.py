@@ -13,7 +13,7 @@ engine = create_engine(
 
 def init_db() -> None:
     # Import models so metadata is registered
-    from app.models import Job, Source  # noqa: F401
+    from app.models import Job, PathMapping, Source  # noqa: F401
 
     SQLModel.metadata.create_all(engine)
 

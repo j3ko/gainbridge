@@ -94,7 +94,7 @@ export class SourcesService {
      * Delete Source
      * @param data The data for the request.
      * @param data.name
-     * @returns unknown Successful Response
+     * @returns boolean Successful Response
      * @throws ApiError
      */
     public static deleteSource(data: SourcesDeleteSourceData): CancelablePromise<SourcesDeleteSourceResponse> {

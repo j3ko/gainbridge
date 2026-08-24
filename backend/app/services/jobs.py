@@ -4,13 +4,14 @@ import logging
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from croniter import croniter
 from sqlmodel import Session, col, select
 
 from app.core.db import engine
-from app.models import Job, JobCreate, Source, SourceCreate
+from app.models import Job, JobCreate, PathMapping, Source, SourceCreate
 from app.schemas.gain import TrackInfo
 from app.services.jellyfin import JellyfinService
 from app.services.plex import PlexService
@@ -27,6 +28,32 @@ def _compute_next_run(cron_expr: str, base: datetime | None = None) -> datetime:
     return croniter(cron_expr, base or _utcnow()).get_next(datetime)
 
 
+def _validate_path_mapping(remote_path: str, local_path: str) -> None:
+    if not remote_path.strip():
+        raise ValueError("remote_path must not be empty")
+    if not Path(local_path).is_dir():
+        raise ValueError(
+            f"local_path does not exist or is not a directory: {local_path}"
+        )
+
+
+def _remap_path(path: str, mappings: list[tuple[str, str]]) -> str:
+    """Rewrite a track path using the first matching remote->local mapping.
+
+    A single Plex/Jellyfin library can span multiple folders on disk, so a
+    source may have several mappings; the first configured one whose
+    remote_path is a prefix of `path` wins.
+    """
+    for remote_path, local_path in mappings:
+        remote = remote_path.rstrip("/")
+        local = local_path.rstrip("/")
+        if path == remote:
+            return local
+        if path.startswith(remote + "/"):
+            return local + path[len(remote) :]
+    return path
+
+
 class JobManager:
     def __init__(self) -> None:
         self._executor = ThreadPoolExecutor(max_workers=1)
@@ -34,16 +61,27 @@ class JobManager:
 
     # ----- sources -----
     def add_source(self, session: Session, data: SourceCreate) -> Source:
+        for m in data.path_mappings:
+            _validate_path_mapping(m.remote_path, m.local_path)
+
+        payload = data.model_dump(exclude={"path_mappings"})
+        mappings = [
+            PathMapping(remote_path=m.remote_path, local_path=m.local_path)
+            for m in data.path_mappings
+        ]
+
         existing = session.exec(select(Source).where(Source.name == data.name)).first()
         if existing:
-            for k, v in data.model_dump().items():
+            for k, v in payload.items():
                 setattr(existing, k, v)
             existing.updated_at = _utcnow()
+            existing.path_mappings = mappings
             session.add(existing)
             session.commit()
             session.refresh(existing)
             return existing
-        source = Source.model_validate(data)
+        source = Source(**payload)
+        source.path_mappings = mappings
         session.add(source)
         session.commit()
         session.refresh(source)
@@ -205,16 +243,32 @@ class JobManager:
             base_url = cfg.base_url
             token = cfg.token
             user_id = cfg.user_id
+            path_mappings = [(m.remote_path, m.local_path) for m in cfg.path_mappings]
             library_id = job.library_id
             dry_run = job.dry_run
             overwrite = job.overwrite_existing
 
         try:
             if source_type == "plex":
-                self._run_plex(job_id, base_url, token, library_id, dry_run, overwrite)
+                self._run_plex(
+                    job_id,
+                    base_url,
+                    token,
+                    library_id,
+                    dry_run,
+                    overwrite,
+                    path_mappings,
+                )
             else:
                 self._run_jellyfin(
-                    job_id, base_url, token, user_id, library_id, dry_run, overwrite
+                    job_id,
+                    base_url,
+                    token,
+                    user_id,
+                    library_id,
+                    dry_run,
+                    overwrite,
+                    path_mappings,
                 )
             self._update_job(job_id, status="completed", message="Done")
         except Exception as e:
@@ -240,6 +294,7 @@ class JobManager:
         library_id: str | None,
         dry_run: bool,
         overwrite: bool,
+        path_mappings: list[tuple[str, str]],
     ) -> None:
         svc = PlexService(base_url, token)
         tracks = list(svc.iter_tracks(library_id))
@@ -247,7 +302,7 @@ class JobManager:
 
         for track in tracks:
             info = svc.get_track_info(track)
-            self._process_track(job_id, info, dry_run, overwrite)
+            self._process_track(job_id, info, dry_run, overwrite, path_mappings)
 
     def _run_jellyfin(
         self,
@@ -258,6 +313,7 @@ class JobManager:
         library_id: str | None,
         dry_run: bool,
         overwrite: bool,
+        path_mappings: list[tuple[str, str]],
     ) -> None:
         svc = JellyfinService(base_url, token, user_id=user_id)
         try:
@@ -265,19 +321,25 @@ class JobManager:
             self._update_job(job_id, total=len(items))
             for item in items:
                 info = svc.get_track_info(item)
-                self._process_track(job_id, info, dry_run, overwrite)
+                self._process_track(job_id, info, dry_run, overwrite, path_mappings)
         finally:
             svc.close()
 
     def _process_track(
-        self, job_id: str, info: TrackInfo, dry_run: bool, overwrite: bool
+        self,
+        job_id: str,
+        info: TrackInfo,
+        dry_run: bool,
+        overwrite: bool,
+        path_mappings: list[tuple[str, str]],
     ) -> None:
         self._bump(job_id, processed=1)
         if not info.path or not info.loudness:
             self._bump(job_id, skipped=1)
             return
+        mapped_path = _remap_path(info.path, path_mappings)
         result = self._tagger.write_replaygain(
-            info.path,
+            mapped_path,
             info.loudness,
             overwrite=overwrite,
             dry_run=dry_run,

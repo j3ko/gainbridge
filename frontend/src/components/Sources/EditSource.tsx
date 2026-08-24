@@ -1,8 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Pencil } from "lucide-react"
+import { Pencil, Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
-import { useForm } from "react-hook-form"
+import { useFieldArray, useForm } from "react-hook-form"
 import { z } from "zod"
 
 import { type SourceCreate, type SourcePublic, SourcesService } from "@/client"
@@ -21,6 +21,7 @@ import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -38,12 +39,18 @@ import {
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
+const pathMappingSchema = z.object({
+  remote_path: z.string().min(1, { message: "Required" }),
+  local_path: z.string().min(1, { message: "Required" }),
+})
+
 const formSchema = z.object({
   type: z.enum(["plex", "jellyfin"]),
   base_url: z.string().min(1, { message: "Server URL is required" }),
   token: z.string().min(1, { message: "Token is required" }),
   user_id: z.string().optional(),
   enabled: z.boolean(),
+  path_mappings: z.array(pathMappingSchema),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -68,10 +75,18 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
       token: source.token,
       user_id: source.user_id ?? "",
       enabled: source.enabled,
+      path_mappings: (source.path_mappings ?? []).map((m) => ({
+        remote_path: m.remote_path,
+        local_path: m.local_path,
+      })),
     },
   })
 
   const sourceType = form.watch("type")
+  const pathMappings = useFieldArray({
+    control: form.control,
+    name: "path_mappings",
+  })
 
   const mutation = useMutation({
     mutationFn: (data: SourceCreate) =>
@@ -194,6 +209,96 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
                   )}
                 />
               )}
+
+              <div className="flex flex-col gap-2">
+                <div>
+                  <FormLabel>Path Mappings</FormLabel>
+                  <FormDescription>
+                    If this library spans multiple folders, or this machine
+                    mounts it at a different path than your Plex/Jellyfin server
+                    does, add a mapping for each folder.
+                  </FormDescription>
+                </div>
+
+                {pathMappings.fields.map((field, index) => (
+                  <div
+                    key={field.id}
+                    className="flex flex-col gap-3 rounded-md border p-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">
+                        Mapping {index + 1}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-6"
+                        onClick={() => pathMappings.remove(index)}
+                      >
+                        <Trash2 className="size-3.5" />
+                        <span className="sr-only">Remove mapping</span>
+                      </Button>
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name={`path_mappings.${index}.remote_path`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-normal">
+                            Remote Path
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="/data/music"
+                              type="text"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Path as your Plex/Jellyfin server sees this folder.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`path_mappings.${index}.local_path`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-normal">
+                            Local Path
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="/mnt/music"
+                              type="text"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Matching path on this machine.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    pathMappings.append({ remote_path: "", local_path: "" })
+                  }
+                >
+                  <Plus className="size-3.5" />
+                  Add Mapping
+                </Button>
+              </div>
 
               <FormField
                 control={form.control}
