@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-from typing import Any, Iterator, Optional
+from collections.abc import Iterator
+from typing import Any
+
 import httpx
 
-from app.schemas.gain import LibraryInfo, TrackInfo, LoudnessInfo
+from app.schemas.gain import LibraryInfo, LoudnessInfo, TrackInfo
 
 
 class JellyfinService:
-    def __init__(self, base_url: str, api_key: str, user_id: Optional[str] = None):
+    def __init__(self, base_url: str, api_key: str, user_id: str | None = None):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.user_id = user_id
@@ -20,7 +22,7 @@ class JellyfinService:
             timeout=60.0,
         )
 
-    def _get(self, path: str, params: Optional[dict] = None) -> Any:
+    def _get(self, path: str, params: dict[str, Any] | None = None) -> Any:
         r = self._client.get(path, params=params or {})
         r.raise_for_status()
         return r.json()
@@ -45,7 +47,7 @@ class JellyfinService:
                 libs.append(LibraryInfo(id=item["Id"], name=item["Name"]))
         return libs
 
-    def iter_audio_items(self, library_id: Optional[str] = None) -> Iterator[dict]:
+    def iter_audio_items(self, library_id: str | None = None) -> Iterator[dict[str, Any]]:
         uid = self.ensure_user_id()
         start = 0
         limit = 200
@@ -63,13 +65,12 @@ class JellyfinService:
             items = data.get("Items", [])
             if not items:
                 break
-            for item in items:
-                yield item
+            yield from items
             start += limit
             if start >= data.get("TotalRecordCount", 0):
                 break
 
-    def _extract_loudness(self, item: dict) -> Optional[LoudnessInfo]:
+    def _extract_loudness(self, item: dict[str, Any]) -> LoudnessInfo | None:
         # Prefer explicit NormalizationGain (already in dB relative to -18 LUFS)
         track_gain = item.get("NormalizationGain")
         album_gain = item.get("AlbumNormalizationGain")
@@ -91,7 +92,7 @@ class JellyfinService:
             album_peak=None,
         )
 
-    def get_track_info(self, item: dict) -> TrackInfo:
+    def get_track_info(self, item: dict[str, Any]) -> TrackInfo:
         artists = item.get("Artists") or []
         return TrackInfo(
             id=item["Id"],
@@ -102,7 +103,7 @@ class JellyfinService:
             loudness=self._extract_loudness(item),
         )
 
-    def test_connection(self) -> dict:
+    def test_connection(self) -> dict[str, Any]:
         info = self._get("/System/Info/Public")
         return {
             "ok": True,
@@ -110,5 +111,5 @@ class JellyfinService:
             "version": info.get("Version"),
         }
 
-    def close(self):
+    def close(self) -> None:
         self._client.close()

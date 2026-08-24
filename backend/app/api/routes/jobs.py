@@ -1,13 +1,14 @@
 from fastapi import APIRouter, HTTPException
+
 from app.api.deps import SessionDep
-from app.models import JobCreate, JobPublic
+from app.models import Job, JobCreate, JobPublic
 from app.services.jobs import job_manager
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 
 @router.post("/", response_model=JobPublic)
-def create_job(session: SessionDep, body: JobCreate):
+def create_job(session: SessionDep, body: JobCreate) -> Job | None:
     try:
         return job_manager.create_job(session, body)
     except ValueError as e:
@@ -15,12 +16,12 @@ def create_job(session: SessionDep, body: JobCreate):
 
 
 @router.get("/", response_model=list[JobPublic])
-def list_jobs(session: SessionDep):
+def list_jobs(session: SessionDep) -> list[Job]:
     return job_manager.list_jobs(session)
 
 
 @router.get("/{job_id}", response_model=JobPublic)
-def get_job(session: SessionDep, job_id: str):
+def get_job(session: SessionDep, job_id: str) -> Job:
     job = job_manager.get_job(session, job_id)
     if not job:
         raise HTTPException(404, "Job not found")

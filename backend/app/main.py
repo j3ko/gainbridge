@@ -1,15 +1,17 @@
 import asyncio
 import contextlib
 import logging
-import sentry_sdk
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+
+import sentry_sdk
 from fastapi import FastAPI
-from app.core.db import init_db
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
 from app.core.config import settings
+from app.core.db import init_db
 from app.services.jobs import job_manager
 
 logger = logging.getLogger(__name__)
@@ -33,7 +35,7 @@ async def _scheduler_loop() -> None:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     init_db()
     task = asyncio.create_task(_scheduler_loop())
     yield

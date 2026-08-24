@@ -4,15 +4,16 @@ import logging
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any
 
 from croniter import croniter
-from sqlmodel import Session, select, col
+from sqlmodel import Session, col, select
 
 from app.core.db import engine
 from app.models import Job, JobCreate, Source, SourceCreate
-from app.services.plex import PlexService
+from app.schemas.gain import TrackInfo
 from app.services.jellyfin import JellyfinService
+from app.services.plex import PlexService
 from app.services.tagger import TaggerService
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _compute_next_run(cron_expr: str, base: Optional[datetime] = None) -> datetime:
+def _compute_next_run(cron_expr: str, base: datetime | None = None) -> datetime:
     return croniter(cron_expr, base or _utcnow()).get_next(datetime)
 
 
@@ -51,7 +52,7 @@ class JobManager:
     def list_sources(self, session: Session) -> list[Source]:
         return list(session.exec(select(Source).order_by(Source.name)).all())
 
-    def get_source(self, session: Session, name: str) -> Optional[Source]:
+    def get_source(self, session: Session, name: str) -> Source | None:
         return session.exec(select(Source).where(Source.name == name)).first()
 
     def delete_source(self, session: Session, name: str) -> bool:
@@ -92,7 +93,7 @@ class JobManager:
         session.refresh(source)
         return source
 
-    def test_source(self, session: Session, name: str) -> dict:
+    def test_source(self, session: Session, name: str) -> dict[str, Any]:
         cfg = self.get_source(session, name)
         if not cfg:
             raise KeyError(name)
@@ -107,7 +108,7 @@ class JobManager:
     # ----- jobs -----
     def create_job(
         self, session: Session, body: JobCreate, skip_if_running: bool = False
-    ) -> Optional[Job]:
+    ) -> Job | None:
         if not self.get_source(session, body.source_name):
             raise ValueError(f"Unknown source: {body.source_name}")
 
@@ -169,14 +170,14 @@ class JobManager:
                 session.add(source)
                 session.commit()
 
-    def get_job(self, session: Session, job_id: str) -> Optional[Job]:
+    def get_job(self, session: Session, job_id: str) -> Job | None:
         return session.get(Job, job_id)
 
     def list_jobs(self, session: Session) -> list[Job]:
         statement = select(Job).order_by(col(Job.created_at).desc())
         return list(session.exec(statement).all())
 
-    def _update_job(self, job_id: str, **fields) -> None:
+    def _update_job(self, job_id: str, **fields: Any) -> None:
         with Session(engine) as session:
             job = session.get(Job, job_id)
             if not job:
@@ -219,7 +220,7 @@ class JobManager:
         except Exception as e:
             self._update_job(job_id, status="failed", message=str(e))
 
-    def _bump(self, job_id: str, **deltas) -> None:
+    def _bump(self, job_id: str, **deltas: int) -> None:
         """Increment counters safely in a short transaction."""
         with Session(engine) as session:
             job = session.get(Job, job_id)
@@ -236,7 +237,7 @@ class JobManager:
         job_id: str,
         base_url: str,
         token: str,
-        library_id: Optional[str],
+        library_id: str | None,
         dry_run: bool,
         overwrite: bool,
     ) -> None:
@@ -253,8 +254,8 @@ class JobManager:
         job_id: str,
         base_url: str,
         token: str,
-        user_id: Optional[str],
-        library_id: Optional[str],
+        user_id: str | None,
+        library_id: str | None,
         dry_run: bool,
         overwrite: bool,
     ) -> None:
@@ -268,7 +269,9 @@ class JobManager:
         finally:
             svc.close()
 
-    def _process_track(self, job_id: str, info, dry_run: bool, overwrite: bool) -> None:
+    def _process_track(
+        self, job_id: str, info: TrackInfo, dry_run: bool, overwrite: bool
+    ) -> None:
         self._bump(job_id, processed=1)
         if not info.path or not info.loudness:
             self._bump(job_id, skipped=1)

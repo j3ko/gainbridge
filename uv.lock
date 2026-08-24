@@ -82,6 +82,7 @@ dev = [
     { name = "prek" },
     { name = "pytest" },
     { name = "ruff" },
+    { name = "types-croniter" },
 ]
 
 [package.metadata]
@@ -114,6 +115,7 @@ dev = [
     { name = "prek", specifier = ">=0.2.24,<1.0.0" },
     { name = "pytest", specifier = ">=7.4.3,<8.0.0" },
     { name = "ruff", specifier = ">=0.2.2,<1.0.0" },
+    { name = "types-croniter", specifier = ">=2.0.0" },
 ]
 
 [[package]]
@@ -1958,6 +1960,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/36/bf/8825b5929afd84d0dabd606c67cd57b8388cb3ec385f7ef19c5cc2202069/typer-0.21.1.tar.gz", hash = "sha256:ea835607cd752343b6b2b7ce676893e5a0324082268b48f27aa058bdb7d2145d", size = 110371, upload-time = "2026-01-06T11:21:10.989Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a0/1d/d9257dd49ff2ca23ea5f132edf1281a0c4f9de8a762b9ae399b670a59235/typer-0.21.1-py3-none-any.whl", hash = "sha256:7985e89081c636b88d172c2ee0cfe33c253160994d47bdfdc302defd7d1f1d01", size = 47381, upload-time = "2026-01-06T11:21:09.824Z" },
+]
+
+[[package]]
+name = "types-croniter"
+version = "6.2.4.20260711"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c0/e1/ef8900515a103efa41b29ce81e59efb18e72bc9642139c5a3a17f6022641/types_croniter-6.2.4.20260711.tar.gz", hash = "sha256:807793e109f4e0d51ec18f6277a1a5f1d133e425ac6bee3a7c3254ab1793e0ea", size = 12164, upload-time = "2026-07-11T04:51:18.624Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c8/3f/896a98180a55f855bd068b97e8c99fd4ce1885a4b43f68fd7b29641084f6/types_croniter-6.2.4.20260711-py3-none-any.whl", hash = "sha256:601b68139a47fe1b2177f433132cc81fd91155f3059a49c5cb63404c389dff01", size = 9746, upload-time = "2026-07-11T04:51:17.662Z" },
 ]
 
 [[package]]

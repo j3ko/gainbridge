@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Optional
+
 from sqlmodel import Field, SQLModel
 
 
@@ -14,18 +14,18 @@ class SourceBase(SQLModel):
     token: str
     enabled: bool = True
     # jellyfin optional
-    user_id: Optional[str] = None
+    user_id: str | None = None
     # cron schedule
-    schedule_cron: Optional[str] = None
+    schedule_cron: str | None = None
     schedule_enabled: bool = False
 
 
 class Source(SourceBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
-    next_run_at: Optional[datetime] = None
-    last_run_at: Optional[datetime] = None
+    next_run_at: datetime | None = None
+    last_run_at: datetime | None = None
 
 
 class SourceCreate(SourceBase):
@@ -35,8 +35,8 @@ class SourceCreate(SourceBase):
 class SourcePublic(SourceBase):
     id: int
     created_at: datetime
-    next_run_at: Optional[datetime] = None
-    last_run_at: Optional[datetime] = None
+    next_run_at: datetime | None = None
+    last_run_at: datetime | None = None
 
 
 class ScheduleUpdate(SQLModel):
@@ -45,7 +45,7 @@ class ScheduleUpdate(SQLModel):
 
 class JobBase(SQLModel):
     source_name: str = Field(index=True)
-    library_id: Optional[str] = None
+    library_id: str | None = None
     dry_run: bool = True
     overwrite_existing: bool = False
     status: str = Field(default="pending", index=True)  # pending|running|completed|failed|cancelled
@@ -58,14 +58,14 @@ class JobBase(SQLModel):
 
 
 class Job(JobBase, table=True):
-    id: Optional[str] = Field(default=None, primary_key=True)  # uuid string
+    id: str | None = Field(default=None, primary_key=True)  # uuid string
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
 
 
 class JobCreate(SQLModel):
     source_name: str
-    library_id: Optional[str] = None
+    library_id: str | None = None
     dry_run: bool = True
     overwrite_existing: bool = False
 

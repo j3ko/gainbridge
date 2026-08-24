@@ -1,24 +1,24 @@
+
 from pydantic import BaseModel, Field
-from typing import Optional
 
 
 class LoudnessInfo(BaseModel):
     """Normalized loudness data"""
-    track_gain_db: Optional[float] = None
-    track_peak: Optional[float] = None
-    album_gain_db: Optional[float] = None
-    album_peak: Optional[float] = None
-    loudness_lufs: Optional[float] = None
-    lra: Optional[float] = None
+    track_gain_db: float | None = None
+    track_peak: float | None = None
+    album_gain_db: float | None = None
+    album_peak: float | None = None
+    loudness_lufs: float | None = None
+    lra: float | None = None
 
 
 class TrackInfo(BaseModel):
     id: str
     title: str
-    artist: Optional[str] = None
-    album: Optional[str] = None
-    path: Optional[str] = None 
-    loudness: Optional[LoudnessInfo] = None
+    artist: str | None = None
+    album: str | None = None
+    path: str | None = None
+    loudness: LoudnessInfo | None = None
     has_existing_rg_tags: bool = False
 
 

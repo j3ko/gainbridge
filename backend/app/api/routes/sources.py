@@ -1,33 +1,38 @@
+from typing import Any
+
 from fastapi import APIRouter, HTTPException
+
 from app.api.deps import SessionDep
-from app.models import ScheduleUpdate, SourceCreate, SourcePublic
+from app.models import ScheduleUpdate, Source, SourceCreate, SourcePublic
+from app.schemas.gain import LibraryInfo
+from app.services.jellyfin import JellyfinService
 from app.services.jobs import job_manager
 from app.services.plex import PlexService
-from app.services.jellyfin import JellyfinService
-from app.schemas.gain import LibraryInfo
 
 router = APIRouter(prefix="/sources", tags=["sources"])
 
 
 @router.get("/", response_model=list[SourcePublic])
-def list_sources(session: SessionDep):
+def list_sources(session: SessionDep) -> list[Source]:
     return job_manager.list_sources(session)
 
 
 @router.post("/", response_model=SourcePublic)
-def add_source(session: SessionDep, body: SourceCreate):
+def add_source(session: SessionDep, body: SourceCreate) -> Source:
     return job_manager.add_source(session, body)
 
 
 @router.delete("/{name}")
-def delete_source(session: SessionDep, name: str):
+def delete_source(session: SessionDep, name: str) -> dict[str, bool]:
     if not job_manager.delete_source(session, name):
         raise HTTPException(404, "Source not found")
     return {"ok": True}
 
 
 @router.put("/{name}/schedule", response_model=SourcePublic)
-def set_schedule(session: SessionDep, name: str, body: ScheduleUpdate):
+def set_schedule(
+    session: SessionDep, name: str, body: ScheduleUpdate
+) -> Source:
     try:
         return job_manager.set_schedule(
             session, name, body.schedule_cron, body.schedule_enabled
@@ -39,7 +44,7 @@ def set_schedule(session: SessionDep, name: str, body: ScheduleUpdate):
 
 
 @router.delete("/{name}/schedule", response_model=SourcePublic)
-def clear_schedule(session: SessionDep, name: str):
+def clear_schedule(session: SessionDep, name: str) -> Source:
     try:
         return job_manager.clear_schedule(session, name)
     except KeyError:
@@ -47,7 +52,7 @@ def clear_schedule(session: SessionDep, name: str):
 
 
 @router.post("/{name}/test")
-def test_source(session: SessionDep, name: str):
+def test_source(session: SessionDep, name: str) -> dict[str, Any]:
     try:
         return job_manager.test_source(session, name)
     except KeyError:
@@ -57,7 +62,7 @@ def test_source(session: SessionDep, name: str):
 
 
 @router.get("/{name}/libraries", response_model=list[LibraryInfo])
-def list_libraries(session: SessionDep, name: str):
+def list_libraries(session: SessionDep, name: str) -> list[LibraryInfo]:
     cfg = job_manager.get_source(session, name)
     if not cfg:
         raise HTTPException(404, "Source not found")

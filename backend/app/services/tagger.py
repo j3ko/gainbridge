@@ -1,19 +1,22 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from mutagen import File as MutagenFile
 from mutagen.flac import FLAC
-from mutagen.oggvorbis import OggVorbis
-from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, TXXX, ID3NoHeaderError
+from mutagen.oggvorbis import OggVorbis
 
 from app.schemas.gain import LoudnessInfo, WriteResult
 
 
 class TaggerService:
     """Write standard ReplayGain tags into audio files."""
+
+    # mutagen declares py.typed but its format classes (FLAC, OggVorbis, ID3,
+    # TXXX) and ID3.delall/add have no parameter annotations, so mypy strict
+    # can't type-check these calls; the `# type: ignore[no-untyped-call]`
+    # comments below are for those, not a project-wide typing gap.
 
     def read_existing_rg(self, path: str) -> dict[str, str]:
         audio = MutagenFile(path, easy=False)
@@ -107,26 +110,26 @@ class TaggerService:
             return WriteResult(path=path, success=False, message=str(e))
 
     def _write_flac(self, path: str, tags: dict[str, str]) -> None:
-        audio = FLAC(path)
+        audio = FLAC(path)  # type: ignore[no-untyped-call]
         for k, v in tags.items():
             audio[k] = v
         audio.save()
 
     def _write_ogg(self, path: str, tags: dict[str, str]) -> None:
-        audio = OggVorbis(path)
+        audio = OggVorbis(path)  # type: ignore[no-untyped-call]
         for k, v in tags.items():
             audio[k] = v
         audio.save()
 
     def _write_mp3(self, path: str, tags: dict[str, str]) -> None:
         try:
-            audio = ID3(path)
+            audio = ID3(path)  # type: ignore[no-untyped-call]
         except ID3NoHeaderError:
-            audio = ID3()
+            audio = ID3()  # type: ignore[no-untyped-call]
         for k, v in tags.items():
             # Remove existing then add
-            audio.delall(f"TXXX:{k}")
-            audio.add(TXXX(encoding=3, desc=k, text=v))
+            audio.delall(f"TXXX:{k}")  # type: ignore[no-untyped-call]
+            audio.add(TXXX(encoding=3, desc=k, text=v))  # type: ignore[no-untyped-call]
         audio.save(path)
 
     def _write_generic(self, path: str, tags: dict[str, str]) -> None:

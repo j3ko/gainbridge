@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from typing import Iterator, Optional
-from plexapi.server import PlexServer
+from collections.abc import Iterator
+from typing import Any
+
 from plexapi.audio import Track
-from plexapi.exceptions import NotFound, BadRequest
+from plexapi.server import PlexServer
 
-from app.schemas.gain import LibraryInfo, TrackInfo, LoudnessInfo
-
+from app.schemas.gain import LibraryInfo, LoudnessInfo, TrackInfo
 
 # Plex stores gain relative to its own reference (~-18 LUFS ReplayGain 2.0 style).
 # The `gain` / `albumGain` fields on the audio stream are already in dB.
@@ -14,7 +14,9 @@ from app.schemas.gain import LibraryInfo, TrackInfo, LoudnessInfo
 
 class PlexService:
     def __init__(self, base_url: str, token: str):
-        self.server = PlexServer(base_url, token)
+        # plexapi declares py.typed but PlexServer.__init__ itself has no
+        # parameter annotations, so mypy strict can't type-check this call.
+        self.server = PlexServer(base_url, token)  # type: ignore[no-untyped-call]
 
     def get_music_libraries(self) -> list[LibraryInfo]:
         libs = []
@@ -23,7 +25,7 @@ class PlexService:
                 libs.append(LibraryInfo(id=str(section.key), name=section.title))
         return libs
 
-    def iter_tracks(self, library_id: Optional[str] = None) -> Iterator[Track]:
+    def iter_tracks(self, library_id: str | None = None) -> Iterator[Track]:
         """Yield all tracks, optionally limited to one library."""
         sections = self.server.library.sections()
         for section in sections:
@@ -32,10 +34,9 @@ class PlexService:
             if library_id and str(section.key) != str(library_id):
                 continue
             # section.all() returns tracks when called on music lib with type filter
-            for track in section.search(libtype="track"):
-                yield track
+            yield from section.search(libtype="track")
 
-    def _extract_loudness(self, track: Track) -> Optional[LoudnessInfo]:
+    def _extract_loudness(self, track: Track) -> LoudnessInfo | None:
         try:
             media_list = getattr(track, "media", None) or []
             if not media_list:
@@ -76,7 +77,7 @@ class PlexService:
             return None
 
 
-    def _file_path(self, track: Track) -> Optional[str]:
+    def _file_path(self, track: Track) -> str | None:
         try:
             media_list = getattr(track, "media", None) or []
             if not media_list:
@@ -100,7 +101,7 @@ class PlexService:
             loudness=self._extract_loudness(track),
         )
 
-    def test_connection(self) -> dict:
+    def test_connection(self) -> dict[str, Any]:
         return {
             "ok": True,
             "server_name": self.server.friendlyName,
