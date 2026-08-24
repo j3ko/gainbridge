@@ -3,8 +3,18 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 
 from app.api.deps import SessionDep
-from app.models import ScheduleUpdate, Source, SourceCreate, SourcePublic
+from app.models import (
+    PlexPinCreate,
+    PlexPinStatus,
+    PlexServerOption,
+    ScheduleUpdate,
+    Source,
+    SourceCreate,
+    SourcePublic,
+    SourceTestRequest,
+)
 from app.schemas.gain import LibraryInfo
+from app.services import plex_oauth
 from app.services.jellyfin import JellyfinService
 from app.services.jobs import job_manager
 from app.services.plex import PlexService
@@ -58,6 +68,37 @@ def test_source(session: SessionDep, name: str) -> dict[str, Any]:
         return job_manager.test_source(session, name)
     except KeyError:
         raise HTTPException(404, "Source not found")
+    except Exception as e:
+        raise HTTPException(400, str(e))
+
+
+@router.post("/test")
+def test_connection(body: SourceTestRequest) -> dict[str, Any]:
+    try:
+        return job_manager.test_connection(
+            body.type, body.base_url, body.token, body.user_id
+        )
+    except Exception as e:
+        raise HTTPException(400, str(e))
+
+
+@router.post("/plex/oauth/pin", response_model=PlexPinCreate)
+def create_plex_pin() -> dict[str, Any]:
+    return plex_oauth.create_pin()
+
+
+@router.get("/plex/oauth/pin/{pin_id}", response_model=PlexPinStatus)
+def check_plex_pin(pin_id: str) -> dict[str, Any]:
+    try:
+        return plex_oauth.check_pin(pin_id)
+    except KeyError:
+        raise HTTPException(404, "Pin not found or expired")
+
+
+@router.get("/plex/oauth/servers", response_model=list[PlexServerOption])
+def list_plex_servers(token: str) -> list[dict[str, Any]]:
+    try:
+        return plex_oauth.list_servers(token)
     except Exception as e:
         raise HTTPException(400, str(e))
 

@@ -72,6 +72,33 @@ class ScheduleUpdate(SQLModel):
     schedule_enabled: bool = True
 
 
+class SourceTestRequest(SQLModel):
+    type: str
+    base_url: str
+    token: str
+    user_id: str | None = None
+
+
+class PlexPinCreate(SQLModel):
+    id: str
+    oauth_url: str
+
+
+class PlexPinStatus(SQLModel):
+    authenticated: bool
+    token: str | None = None
+
+
+class PlexServerConnection(SQLModel):
+    uri: str
+    local: bool
+
+
+class PlexServerOption(SQLModel):
+    name: str
+    connections: list[PlexServerConnection]
+
+
 class JobBase(SQLModel):
     source_name: str = Field(index=True)
     library_id: str | None = None

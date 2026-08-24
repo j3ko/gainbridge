@@ -45,6 +45,26 @@ export type PathMappingPublic = {
     id: number;
 };
 
+export type PlexPinCreate = {
+    id: string;
+    oauth_url: string;
+};
+
+export type PlexPinStatus = {
+    authenticated: boolean;
+    token?: (string | null);
+};
+
+export type PlexServerConnection = {
+    uri: string;
+    local: boolean;
+};
+
+export type PlexServerOption = {
+    name: string;
+    connections: Array<PlexServerConnection>;
+};
+
 export type ScheduleUpdate = {
     schedule_cron: string;
     schedule_enabled?: boolean;
@@ -76,6 +96,13 @@ export type SourcePublic = {
     next_run_at?: (string | null);
     last_run_at?: (string | null);
     path_mappings?: Array<PathMappingPublic>;
+};
+
+export type SourceTestRequest = {
+    type: string;
+    base_url: string;
+    token: string;
+    user_id?: (string | null);
 };
 
 export type ValidationError = {
@@ -134,6 +161,28 @@ export type SourcesTestSourceData = {
 export type SourcesTestSourceResponse = ({
     [key: string]: unknown;
 });
+
+export type SourcesTestConnectionData = {
+    requestBody: SourceTestRequest;
+};
+
+export type SourcesTestConnectionResponse = ({
+    [key: string]: unknown;
+});
+
+export type SourcesCreatePlexPinResponse = (PlexPinCreate);
+
+export type SourcesCheckPlexPinData = {
+    pinId: string;
+};
+
+export type SourcesCheckPlexPinResponse = (PlexPinStatus);
+
+export type SourcesListPlexServersData = {
+    token: string;
+};
+
+export type SourcesListPlexServersResponse = (Array<PlexServerOption>);
 
 export type SourcesListLibrariesData = {
     name: string;

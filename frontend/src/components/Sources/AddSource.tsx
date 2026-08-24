@@ -6,6 +6,7 @@ import { useFieldArray, useForm } from "react-hook-form"
 import { z } from "zod"
 
 import { type SourceCreate, SourcesService } from "@/client"
+import PlexSignIn from "@/components/Sources/PlexSignIn"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -103,6 +104,33 @@ const AddSource = () => {
     })
   }
 
+  const testMutation = useMutation({
+    mutationFn: () =>
+      SourcesService.testConnection({
+        requestBody: {
+          type: form.getValues("type"),
+          base_url: form.getValues("base_url"),
+          token: form.getValues("token"),
+          user_id: form.getValues("user_id") || null,
+        },
+      }),
+    onSuccess: (result: Record<string, unknown>) => {
+      const serverName = result.server_name as string | undefined
+      const version = result.version as string | undefined
+      const label = [serverName, version].filter(Boolean).join(" · ")
+      showSuccessToast(
+        label ? `Connected to ${label}` : "Connection successful",
+      )
+    },
+    onError: handleError.bind(showErrorToast),
+  })
+
+  const handleTestConnection = async () => {
+    const valid = await form.trigger(["type", "base_url", "token", "user_id"])
+    if (!valid) return
+    testMutation.mutate()
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -119,7 +147,7 @@ const AddSource = () => {
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form className="min-w-0" onSubmit={form.handleSubmit(onSubmit)}>
             <div className="grid gap-4 py-4">
               <FormField
                 control={form.control}
@@ -165,42 +193,77 @@ const AddSource = () => {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="base_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Server URL <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="http://192.168.1.10:32400"
-                        type="text"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {sourceType === "plex" ? (
+                <FormItem className="min-w-0">
+                  <FormLabel>
+                    Plex Server <span className="text-destructive">*</span>
+                  </FormLabel>
+                  <PlexSignIn
+                    onConnected={({ base_url, token }) => {
+                      form.setValue("base_url", base_url, {
+                        shouldValidate: true,
+                      })
+                      form.setValue("token", token, { shouldValidate: true })
+                    }}
+                  />
+                  <FormMessage>
+                    {form.formState.errors.base_url?.message ||
+                      form.formState.errors.token?.message}
+                  </FormMessage>
+                </FormItem>
+              ) : (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="base_url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Server URL <span className="text-destructive">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="http://192.168.1.10:8096"
+                            type="text"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="token"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      {sourceType === "jellyfin" ? "API Key" : "Token"}{" "}
-                      <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="Token" type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="token"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          API Key <span className="text-destructive">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Token"
+                            type="password"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+
+              <LoadingButton
+                type="button"
+                variant="outline"
+                size="sm"
+                loading={testMutation.isPending}
+                onClick={handleTestConnection}
+              >
+                Test Connection
+              </LoadingButton>
 
               {sourceType === "jellyfin" && (
                 <FormField

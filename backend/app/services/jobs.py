@@ -135,9 +135,14 @@ class JobManager:
         cfg = self.get_source(session, name)
         if not cfg:
             raise KeyError(name)
-        if cfg.type == "plex":
-            return PlexService(cfg.base_url, cfg.token).test_connection()
-        svc = JellyfinService(cfg.base_url, cfg.token, user_id=cfg.user_id)
+        return self.test_connection(cfg.type, cfg.base_url, cfg.token, cfg.user_id)
+
+    def test_connection(
+        self, type: str, base_url: str, token: str, user_id: str | None = None
+    ) -> dict[str, Any]:
+        if type == "plex":
+            return PlexService(base_url, token).test_connection()
+        svc = JellyfinService(base_url, token, user_id=user_id)
         try:
             return svc.test_connection()
         finally:

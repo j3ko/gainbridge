@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { JobsListJobsResponse, JobsCreateJobData, JobsCreateJobResponse, JobsGetJobData, JobsGetJobResponse, SourcesListSourcesResponse, SourcesAddSourceData, SourcesAddSourceResponse, SourcesDeleteSourceData, SourcesDeleteSourceResponse, SourcesSetScheduleData, SourcesSetScheduleResponse, SourcesClearScheduleData, SourcesClearScheduleResponse, SourcesTestSourceData, SourcesTestSourceResponse, SourcesListLibrariesData, SourcesListLibrariesResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { JobsListJobsResponse, JobsCreateJobData, JobsCreateJobResponse, JobsGetJobData, JobsGetJobResponse, SourcesListSourcesResponse, SourcesAddSourceData, SourcesAddSourceResponse, SourcesDeleteSourceData, SourcesDeleteSourceResponse, SourcesSetScheduleData, SourcesSetScheduleResponse, SourcesClearScheduleData, SourcesClearScheduleResponse, SourcesTestSourceData, SourcesTestSourceResponse, SourcesTestConnectionData, SourcesTestConnectionResponse, SourcesCreatePlexPinResponse, SourcesCheckPlexPinData, SourcesCheckPlexPinResponse, SourcesListPlexServersData, SourcesListPlexServersResponse, SourcesListLibrariesData, SourcesListLibrariesResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class JobsService {
     /**
@@ -166,6 +166,77 @@ export class SourcesService {
             url: '/api/v1/sources/{name}/test',
             path: {
                 name: data.name
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Test Connection
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static testConnection(data: SourcesTestConnectionData): CancelablePromise<SourcesTestConnectionResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/sources/test',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Plex Pin
+     * @returns PlexPinCreate Successful Response
+     * @throws ApiError
+     */
+    public static createPlexPin(): CancelablePromise<SourcesCreatePlexPinResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/sources/plex/oauth/pin'
+        });
+    }
+    
+    /**
+     * Check Plex Pin
+     * @param data The data for the request.
+     * @param data.pinId
+     * @returns PlexPinStatus Successful Response
+     * @throws ApiError
+     */
+    public static checkPlexPin(data: SourcesCheckPlexPinData): CancelablePromise<SourcesCheckPlexPinResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/sources/plex/oauth/pin/{pin_id}',
+            path: {
+                pin_id: data.pinId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List Plex Servers
+     * @param data The data for the request.
+     * @param data.token
+     * @returns PlexServerOption Successful Response
+     * @throws ApiError
+     */
+    public static listPlexServers(data: SourcesListPlexServersData): CancelablePromise<SourcesListPlexServersResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/sources/plex/oauth/servers',
+            query: {
+                token: data.token
             },
             errors: {
                 422: 'Validation Error'

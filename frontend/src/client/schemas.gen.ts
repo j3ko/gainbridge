@@ -186,6 +186,80 @@ export const PathMappingPublicSchema = {
     title: 'PathMappingPublic'
 } as const;
 
+export const PlexPinCreateSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            title: 'Id'
+        },
+        oauth_url: {
+            type: 'string',
+            title: 'Oauth Url'
+        }
+    },
+    type: 'object',
+    required: ['id', 'oauth_url'],
+    title: 'PlexPinCreate'
+} as const;
+
+export const PlexPinStatusSchema = {
+    properties: {
+        authenticated: {
+            type: 'boolean',
+            title: 'Authenticated'
+        },
+        token: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Token'
+        }
+    },
+    type: 'object',
+    required: ['authenticated'],
+    title: 'PlexPinStatus'
+} as const;
+
+export const PlexServerConnectionSchema = {
+    properties: {
+        uri: {
+            type: 'string',
+            title: 'Uri'
+        },
+        local: {
+            type: 'boolean',
+            title: 'Local'
+        }
+    },
+    type: 'object',
+    required: ['uri', 'local'],
+    title: 'PlexServerConnection'
+} as const;
+
+export const PlexServerOptionSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        connections: {
+            items: {
+                '$ref': '#/components/schemas/PlexServerConnection'
+            },
+            type: 'array',
+            title: 'Connections'
+        }
+    },
+    type: 'object',
+    required: ['name', 'connections'],
+    title: 'PlexServerOption'
+} as const;
+
 export const ScheduleUpdateSchema = {
     properties: {
         schedule_cron: {
@@ -362,6 +436,37 @@ export const SourcePublicSchema = {
     type: 'object',
     required: ['name', 'type', 'base_url', 'token', 'id', 'created_at'],
     title: 'SourcePublic'
+} as const;
+
+export const SourceTestRequestSchema = {
+    properties: {
+        type: {
+            type: 'string',
+            title: 'Type'
+        },
+        base_url: {
+            type: 'string',
+            title: 'Base Url'
+        },
+        token: {
+            type: 'string',
+            title: 'Token'
+        },
+        user_id: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Id'
+        }
+    },
+    type: 'object',
+    required: ['type', 'base_url', 'token'],
+    title: 'SourceTestRequest'
 } as const;
 
 export const ValidationErrorSchema = {
