@@ -1,57 +1,51 @@
-import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { RefreshCw } from "lucide-react"
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
 
+import { JobsService, SourcesService } from "@/client"
 import { Button } from "@/components/ui/button"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
-const formSchema = z.object({
-  title: z.string().min(1, { message: "Title is required" }),
-  description: z.string().optional(),
-})
-
-type FormData = z.infer<typeof formSchema>
-
 const SyncAll = () => {
-  const [_isOpen, setIsOpen] = useState(false)
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    mode: "onBlur",
-    criteriaMode: "all",
-    defaultValues: {
-      title: "",
-      description: "",
-    },
-  })
-
   const mutation = useMutation({
-    // mutationFn: (data: ItemCreate) =>
-    //   ItemsService.createItem({ requestBody: data }),
-    onSuccess: () => {
-      showSuccessToast("Item created successfully")
-      form.reset()
-      setIsOpen(false)
+    mutationFn: async () => {
+      const sources = await SourcesService.listSources()
+      const enabled = sources.filter((source) => source.enabled)
+      await Promise.all(
+        enabled.map((source) =>
+          JobsService.createJob({
+            requestBody: { source_name: source.name, dry_run: false },
+          }),
+        ),
+      )
+      return enabled.length
+    },
+    onSuccess: (count) => {
+      showSuccessToast(
+        count > 0
+          ? `Sync started for ${count} source${count === 1 ? "" : "s"}`
+          : "No enabled sources to sync",
+      )
     },
     onError: handleError.bind(showErrorToast),
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["items"] })
+      queryClient.invalidateQueries({ queryKey: ["jobs"] })
     },
   })
 
-  const _onSubmit = (data: FormData) => {
-    // mutation.mutate(data)
-  }
-
   return (
-    <Button className="my-4">
-      <RefreshCw className="mr-2" />
+    <Button
+      className="my-4"
+      variant="outline"
+      onClick={() => mutation.mutate()}
+      disabled={mutation.isPending}
+    >
+      <RefreshCw
+        className={mutation.isPending ? "mr-2 animate-spin" : "mr-2"}
+      />
       Sync All
     </Button>
   )

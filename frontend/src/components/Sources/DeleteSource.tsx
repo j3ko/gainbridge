@@ -3,6 +3,7 @@ import { Trash2 } from "lucide-react"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 
+import { SourcesService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -19,22 +20,18 @@ import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
 interface DeleteSourceProps {
-  id: number
+  name: string
   onSuccess: () => void
 }
 
-const DeleteSource = ({ id, onSuccess }: DeleteSourceProps) => {
+const DeleteSource = ({ name, onSuccess }: DeleteSourceProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const { handleSubmit } = useForm()
 
-  const deleteItem = async (id: number) => {
-    // await ItemsService.deleteItem({ id: id })
-  }
-
   const mutation = useMutation({
-    mutationFn: deleteItem,
+    mutationFn: () => SourcesService.deleteSource({ name }),
     onSuccess: () => {
       showSuccessToast("The source was deleted successfully")
       setIsOpen(false)
@@ -42,12 +39,12 @@ const DeleteSource = ({ id, onSuccess }: DeleteSourceProps) => {
     },
     onError: handleError.bind(showErrorToast),
     onSettled: () => {
-      queryClient.invalidateQueries()
+      queryClient.invalidateQueries({ queryKey: ["sources"] })
     },
   })
 
   const onSubmit = async () => {
-    mutation.mutate(id)
+    mutation.mutate()
   }
 
   return (
@@ -65,8 +62,8 @@ const DeleteSource = ({ id, onSuccess }: DeleteSourceProps) => {
           <DialogHeader>
             <DialogTitle>Delete Source</DialogTitle>
             <DialogDescription>
-              This source will be permanently deleted. Are you sure? You will not
-              be able to undo this action.
+              This source will be permanently deleted. Are you sure? You will
+              not be able to undo this action.
             </DialogDescription>
           </DialogHeader>
 

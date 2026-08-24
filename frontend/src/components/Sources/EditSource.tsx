@@ -5,8 +5,9 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { type SourcePublic } from "@/client"
+import { type SourceCreate, type SourcePublic, SourcesService } from "@/client"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogClose,
@@ -27,12 +28,22 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
 const formSchema = z.object({
-  title: z.string().min(1, { message: "Title is required" }),
-  description: z.string().optional(),
+  type: z.enum(["plex", "jellyfin"]),
+  base_url: z.string().min(1, { message: "Server URL is required" }),
+  token: z.string().min(1, { message: "Token is required" }),
+  user_id: z.string().optional(),
+  enabled: z.boolean(),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -51,15 +62,20 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
     resolver: zodResolver(formSchema),
     mode: "onBlur",
     criteriaMode: "all",
-    // defaultValues: {
-    //   title: source.title,
-    //   description: source.description ?? undefined,
-    // },
+    defaultValues: {
+      type: source.type as "plex" | "jellyfin",
+      base_url: source.base_url,
+      token: source.token,
+      user_id: source.user_id ?? "",
+      enabled: source.enabled,
+    },
   })
 
+  const sourceType = form.watch("type")
+
   const mutation = useMutation({
-    // mutationFn: (data: FormData) =>
-    //   ItemsService.updateItem({ id: source.id, requestBody: data }),
+    mutationFn: (data: SourceCreate) =>
+      SourcesService.addSource({ requestBody: data }),
     onSuccess: () => {
       showSuccessToast("Source updated successfully")
       setIsOpen(false)
@@ -67,12 +83,16 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
     },
     onError: handleError.bind(showErrorToast),
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["items"] })
+      queryClient.invalidateQueries({ queryKey: ["sources"] })
     },
   })
 
   const onSubmit = (data: FormData) => {
-    // mutation.mutate(data)
+    mutation.mutate({
+      ...data,
+      name: source.name,
+      user_id: data.user_id ? data.user_id : null,
+    })
   }
 
   return (
@@ -90,20 +110,48 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
             <DialogHeader>
               <DialogTitle>Edit Source</DialogTitle>
               <DialogDescription>
-                Update the source details below.
+                Update the connection details for "{source.name}".
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <FormField
                 control={form.control}
-                name="title"
+                name="type"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Title <span className="text-destructive">*</span>
+                      Type <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="plex">Plex</SelectItem>
+                        <SelectItem value="jellyfin">Jellyfin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="base_url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Server URL <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="Title" type="text" {...field} />
+                      <Input
+                        placeholder="http://192.168.1.10:32400"
+                        type="text"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -112,14 +160,53 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
 
               <FormField
                 control={form.control}
-                name="description"
+                name="token"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>
+                      {sourceType === "jellyfin" ? "API Key" : "Token"}{" "}
+                      <span className="text-destructive">*</span>
+                    </FormLabel>
                     <FormControl>
-                      <Input placeholder="Description" type="text" {...field} />
+                      <Input placeholder="Token" type="password" {...field} />
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {sourceType === "jellyfin" && (
+                <FormField
+                  control={form.control}
+                  name="user_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>User ID</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Jellyfin user ID"
+                          type="text"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              <FormField
+                control={form.control}
+                name="enabled"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel className="font-normal">Enabled</FormLabel>
                   </FormItem>
                 )}
               />
