@@ -90,6 +90,13 @@ class PlexService:
             return None
 
     def get_track_info(self, track: Track) -> TrackInfo:
+        # Tracks from section.search()/iter_tracks() are partial objects: the
+        # bulk listing XML omits nested <Stream> elements (streamType, gain,
+        # peak, loudness), so track.media[...].parts[...].streams is empty
+        # until we reload the full item metadata.
+        if track.isPartialObject():  # type: ignore[no-untyped-call]
+            track.reload()  # type: ignore[no-untyped-call]
+
         path = self._file_path(track)
         return TrackInfo(
             id=str(track.ratingKey),
