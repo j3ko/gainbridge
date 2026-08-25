@@ -18,6 +18,10 @@ class TaggerService:
     # can't type-check these calls; the `# type: ignore[no-untyped-call]`
     # comments below are for those, not a project-wide typing gap.
 
+    # Below this, an existing REPLAYGAIN_TRACK_GAIN tag is considered
+    # up to date rather than stale/mismatched.
+    GAIN_TOLERANCE_DB = 0.1
+
     def read_existing_rg(self, path: str) -> dict[str, str]:
         audio = MutagenFile(path, easy=False)
         if audio is None:
@@ -40,9 +44,19 @@ class TaggerService:
                     tags[key.upper()] = str(val[0] if isinstance(val, list) else val)
         return tags
 
-    def has_replaygain(self, path: str) -> bool:
-        existing = self.read_existing_rg(path)
-        return any("GAIN" in k for k in existing)
+    def _gain_matches(self, existing: dict[str, str], loudness: LoudnessInfo) -> bool:
+        """Return True if an existing REPLAYGAIN_TRACK_GAIN tag is already
+        within tolerance of the freshly computed value."""
+        if loudness.track_gain_db is None:
+            return False
+        raw = existing.get("REPLAYGAIN_TRACK_GAIN")
+        if not raw:
+            return False
+        try:
+            existing_db = float(raw.split()[0])
+        except (ValueError, IndexError):
+            return False
+        return abs(existing_db - loudness.track_gain_db) <= self.GAIN_TOLERANCE_DB
 
     def write_replaygain(
         self,
@@ -56,12 +70,21 @@ class TaggerService:
         if not p.is_file():
             return WriteResult(path=path, success=False, message="File not found")
 
-        if not overwrite and self.has_replaygain(path):
-            return WriteResult(
-                path=path,
-                success=True,
-                message="Skipped – existing ReplayGain tags",
-            )
+        if not overwrite:
+            existing = self.read_existing_rg(path)
+            if any("GAIN" in k for k in existing):
+                if loudness.track_gain_db is None:
+                    return WriteResult(
+                        path=path,
+                        success=True,
+                        message="Skipped – existing ReplayGain tags",
+                    )
+                if self._gain_matches(existing, loudness):
+                    return WriteResult(
+                        path=path,
+                        success=True,
+                        message="Skipped – existing ReplayGain tags already match",
+                    )
 
         if loudness.track_gain_db is None:
             return WriteResult(
