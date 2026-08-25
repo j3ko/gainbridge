@@ -73,7 +73,7 @@ export const columns: ColumnDef<JobPublic>[] = [
     id: "message",
     header: "Message",
     cell: ({ row }) => (
-      <span className="text-muted-foreground text-sm">
+      <span className="text-muted-foreground text-sm block max-w-[400px] whitespace-normal break-words">
         {row.original.message || "—"}
       </span>
     ),

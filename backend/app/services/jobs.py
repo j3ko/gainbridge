@@ -10,6 +10,7 @@ from typing import Any
 from croniter import croniter
 from sqlmodel import Session, col, select
 
+from app.core.config import settings
 from app.core.db import engine
 from app.models import Job, JobCreate, PathMapping, Source, SourceCreate
 from app.schemas.gain import TrackInfo
@@ -18,6 +19,8 @@ from app.services.plex import PlexService
 from app.services.tagger import TaggerService
 
 logger = logging.getLogger(__name__)
+
+MAX_LOG_LINES = 1000
 
 
 def _utcnow() -> datetime:
@@ -220,6 +223,18 @@ class JobManager:
         statement = select(Job).order_by(col(Job.created_at).desc())
         return list(session.exec(statement).all())
 
+    def read_log(self, job_id: str | None = None) -> str:
+        log_path = Path(settings.LOG_FILE)
+        if not log_path.is_file():
+            return ""
+        lines = log_path.read_text().splitlines()
+        if job_id is not None:
+            marker = f"[job {job_id}]"
+            lines = [line for line in lines if marker in line]
+        else:
+            lines = lines[-MAX_LOG_LINES:]
+        return "\n".join(lines)
+
     def _update_job(self, job_id: str, **fields: Any) -> None:
         with Session(engine) as session:
             job = session.get(Job, job_id)
@@ -238,6 +253,7 @@ class JobManager:
             job = session.get(Job, job_id)
             if not job:
                 return
+            logger.info("[job %s] started: source=%s", job_id, job.source_name)
             cfg = self.get_source(session, job.source_name)
             if not cfg:
                 self._update_job(job_id, status="failed", message="Source missing")
@@ -278,6 +294,18 @@ class JobManager:
             self._update_job(job_id, status="completed", message="Done")
         except Exception as e:
             self._update_job(job_id, status="failed", message=str(e))
+        finally:
+            with Session(engine) as session:
+                job = session.get(Job, job_id)
+                if job:
+                    logger.info(
+                        "[job %s] finished: status=%s written=%d skipped=%d errors=%d",
+                        job_id,
+                        job.status,
+                        job.written,
+                        job.skipped,
+                        job.errors,
+                    )
 
     def _bump(self, job_id: str, **deltas: int) -> None:
         """Increment counters safely in a short transaction."""
@@ -306,8 +334,12 @@ class JobManager:
         self._update_job(job_id, total=len(tracks))
 
         for track in tracks:
-            info = svc.get_track_info(track)
-            self._process_track(job_id, info, dry_run, overwrite, path_mappings)
+            try:
+                info = svc.get_track_info(track)
+                self._process_track(job_id, info, dry_run, overwrite, path_mappings)
+            except Exception as e:
+                self._bump(job_id, processed=1, errors=1)
+                logger.warning("[job %s] error (track fetch failed): %s", job_id, e)
 
     def _run_jellyfin(
         self,
@@ -325,8 +357,12 @@ class JobManager:
             items = list(svc.iter_audio_items(library_id))
             self._update_job(job_id, total=len(items))
             for item in items:
-                info = svc.get_track_info(item)
-                self._process_track(job_id, info, dry_run, overwrite, path_mappings)
+                try:
+                    info = svc.get_track_info(item)
+                    self._process_track(job_id, info, dry_run, overwrite, path_mappings)
+                except Exception as e:
+                    self._bump(job_id, processed=1, errors=1)
+                    logger.warning("[job %s] error (track fetch failed): %s", job_id, e)
         finally:
             svc.close()
 
@@ -341,6 +377,11 @@ class JobManager:
         self._bump(job_id, processed=1)
         if not info.path or not info.loudness:
             self._bump(job_id, skipped=1)
+            logger.info(
+                "[job %s] skipped %s: missing path or loudness data",
+                job_id,
+                info.path or info.title,
+            )
             return
         mapped_path = _remap_path(info.path, path_mappings)
         result = self._tagger.write_replaygain(
@@ -352,10 +393,14 @@ class JobManager:
         if result.success:
             if "Skipped" in result.message:
                 self._bump(job_id, skipped=1)
+                logger.info(
+                    "[job %s] skipped %s: %s", job_id, mapped_path, result.message
+                )
             else:
                 self._bump(job_id, written=1)
         else:
             self._bump(job_id, errors=1)
+            logger.warning("[job %s] error %s: %s", job_id, mapped_path, result.message)
 
 
 job_manager = JobManager()

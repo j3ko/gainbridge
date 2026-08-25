@@ -1,10 +1,15 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { ScrollText } from "lucide-react"
+import { useState } from "react"
 
 import { JobsService } from "@/client"
-import { DataTable } from "@/components/Common/DataTable"
-import { columns } from "@/components/Jobs/columns"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export const Route = createFileRoute("/_layout/logs")({
   component: Logs,
@@ -17,8 +22,12 @@ export const Route = createFileRoute("/_layout/logs")({
   }),
 })
 
-function JobsTable() {
-  const { data: jobs, isPending } = useQuery({
+const ALL_JOBS = "all"
+
+function LogViewer() {
+  const [selectedJobId, setSelectedJobId] = useState(ALL_JOBS)
+
+  const { data: jobs } = useQuery({
     queryKey: ["jobs"],
     queryFn: () => JobsService.listJobs(),
     refetchInterval: (query) => {
@@ -29,27 +38,42 @@ function JobsTable() {
     },
   })
 
-  if (isPending) {
-    return (
-      <div className="py-12 text-center text-muted-foreground">Loading...</div>
-    )
-  }
+  const { data: jobLog, isPending } = useQuery({
+    queryKey: ["jobs", "log", selectedJobId],
+    queryFn: () =>
+      JobsService.getJobsLog({
+        jobId: selectedJobId === ALL_JOBS ? undefined : selectedJobId,
+      }),
+    refetchInterval: (query) => {
+      const hasActiveJob = jobs?.some(
+        (job) => job.status === "pending" || job.status === "running",
+      )
+      return hasActiveJob && !query.state.error ? 2000 : false
+    },
+  })
 
-  if (!jobs || jobs.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center text-center py-12">
-        <div className="rounded-full bg-muted p-4 mb-4">
-          <ScrollText className="h-8 w-8 text-muted-foreground" />
-        </div>
-        <h3 className="text-lg font-semibold">No sync jobs yet</h3>
-        <p className="text-muted-foreground">
-          Run a sync from a source to see its progress here
-        </p>
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-end">
+        <Select value={selectedJobId} onValueChange={setSelectedJobId}>
+          <SelectTrigger className="w-[280px]">
+            <SelectValue placeholder="All jobs" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_JOBS}>All jobs</SelectItem>
+            {jobs?.map((job) => (
+              <SelectItem key={job.id} value={job.id}>
+                {job.source_name} — {new Date(job.created_at).toLocaleString()}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-    )
-  }
-
-  return <DataTable columns={columns} data={jobs} />
+      <pre className="max-h-[500px] overflow-y-auto rounded-md border bg-muted/20 p-4 text-xs whitespace-pre-wrap break-words">
+        {isPending ? "Loading..." : jobLog?.log || "No log entries yet."}
+      </pre>
+    </div>
+  )
 }
 
 function Logs() {
@@ -58,10 +82,10 @@ function Logs() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Logs</h1>
         <p className="text-muted-foreground">
-          Track the status of your ReplayGain sync jobs
+          Raw log output from your ReplayGain sync jobs
         </p>
       </div>
-      <JobsTable />
+      <LogViewer />
     </div>
   )
 }

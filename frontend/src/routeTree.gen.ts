@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutLogsRouteImport } from './routes/_layout/logs'
+import { Route as LayoutJobsRouteImport } from './routes/_layout/jobs'
 
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
@@ -27,27 +28,35 @@ const LayoutLogsRoute = LayoutLogsRouteImport.update({
   path: '/logs',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutJobsRoute = LayoutJobsRouteImport.update({
+  id: '/jobs',
+  path: '/jobs',
+  getParentRoute: () => LayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
+  '/jobs': typeof LayoutJobsRoute
   '/logs': typeof LayoutLogsRoute
 }
 export interface FileRoutesByTo {
+  '/jobs': typeof LayoutJobsRoute
   '/logs': typeof LayoutLogsRoute
   '/': typeof LayoutIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_layout': typeof LayoutRouteWithChildren
+  '/_layout/jobs': typeof LayoutJobsRoute
   '/_layout/logs': typeof LayoutLogsRoute
   '/_layout/': typeof LayoutIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/logs'
+  fullPaths: '/' | '/jobs' | '/logs'
   fileRoutesByTo: FileRoutesByTo
-  to: '/logs' | '/'
-  id: '__root__' | '/_layout' | '/_layout/logs' | '/_layout/'
+  to: '/jobs' | '/logs' | '/'
+  id: '__root__' | '/_layout' | '/_layout/jobs' | '/_layout/logs' | '/_layout/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,15 +86,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutLogsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/jobs': {
+      id: '/_layout/jobs'
+      path: '/jobs'
+      fullPath: '/jobs'
+      preLoaderRoute: typeof LayoutJobsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
   }
 }
 
 interface LayoutRouteChildren {
+  LayoutJobsRoute: typeof LayoutJobsRoute
   LayoutLogsRoute: typeof LayoutLogsRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
+  LayoutJobsRoute: LayoutJobsRoute,
   LayoutLogsRoute: LayoutLogsRoute,
   LayoutIndexRoute: LayoutIndexRoute,
 }

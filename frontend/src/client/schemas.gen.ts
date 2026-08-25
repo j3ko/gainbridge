@@ -47,6 +47,18 @@ export const JobCreateSchema = {
     title: 'JobCreate'
 } as const;
 
+export const JobLogSchema = {
+    properties: {
+        log: {
+            type: 'string',
+            title: 'Log'
+        }
+    },
+    type: 'object',
+    required: ['log'],
+    title: 'JobLog'
+} as const;
+
 export const JobPublicSchema = {
     properties: {
         source_name: {

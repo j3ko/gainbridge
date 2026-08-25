@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { JobsListJobsResponse, JobsCreateJobData, JobsCreateJobResponse, JobsGetJobData, JobsGetJobResponse, SourcesListSourcesResponse, SourcesAddSourceData, SourcesAddSourceResponse, SourcesDeleteSourceData, SourcesDeleteSourceResponse, SourcesSetScheduleData, SourcesSetScheduleResponse, SourcesClearScheduleData, SourcesClearScheduleResponse, SourcesTestSourceData, SourcesTestSourceResponse, SourcesTestConnectionData, SourcesTestConnectionResponse, SourcesCreatePlexPinResponse, SourcesCheckPlexPinData, SourcesCheckPlexPinResponse, SourcesListPlexServersData, SourcesListPlexServersResponse, SourcesListLibrariesData, SourcesListLibrariesResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { JobsListJobsResponse, JobsCreateJobData, JobsCreateJobResponse, JobsGetJobsLogData, JobsGetJobsLogResponse, JobsGetJobData, JobsGetJobResponse, SourcesListSourcesResponse, SourcesAddSourceData, SourcesAddSourceResponse, SourcesDeleteSourceData, SourcesDeleteSourceResponse, SourcesSetScheduleData, SourcesSetScheduleResponse, SourcesClearScheduleData, SourcesClearScheduleResponse, SourcesTestSourceData, SourcesTestSourceResponse, SourcesTestConnectionData, SourcesTestConnectionResponse, SourcesCreatePlexPinResponse, SourcesCheckPlexPinData, SourcesCheckPlexPinResponse, SourcesListPlexServersData, SourcesListPlexServersResponse, SourcesListLibrariesData, SourcesListLibrariesResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class JobsService {
     /**
@@ -31,6 +31,26 @@ export class JobsService {
             url: '/api/v1/jobs/',
             body: data.requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Jobs Log
+     * @param data The data for the request.
+     * @param data.jobId
+     * @returns JobLog Successful Response
+     * @throws ApiError
+     */
+    public static getJobsLog(data: JobsGetJobsLogData = {}): CancelablePromise<JobsGetJobsLogResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/jobs/log',
+            query: {
+                job_id: data.jobId
+            },
             errors: {
                 422: 'Validation Error'
             }

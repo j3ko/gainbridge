@@ -11,6 +11,10 @@ export type JobCreate = {
     overwrite_existing?: boolean;
 };
 
+export type JobLog = {
+    log: string;
+};
+
 export type JobPublic = {
     source_name: string;
     library_id?: (string | null);
@@ -118,6 +122,12 @@ export type JobsCreateJobData = {
 };
 
 export type JobsCreateJobResponse = (JobPublic);
+
+export type JobsGetJobsLogData = {
+    jobId?: (string | null);
+};
+
+export type JobsGetJobsLogResponse = (JobLog);
 
 export type JobsGetJobData = {
     jobId: string;

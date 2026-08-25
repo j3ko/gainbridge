@@ -132,3 +132,7 @@ class JobPublic(JobBase):
     id: str
     created_at: datetime
     updated_at: datetime
+
+
+class JobLog(SQLModel):
+    log: str

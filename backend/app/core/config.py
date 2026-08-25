@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None
     SQLITE_DB_FILE: str = "gainbridge.db"
+    LOG_FILE: str = "gainbridge.log"
 
     @computed_field  # type: ignore[prop-decorator]
     @property
