@@ -69,7 +69,7 @@ def test_existing_tags_outside_tolerance_are_rewritten(tmp_path, monkeypatch):
     assert result.tags_written["REPLAYGAIN_TRACK_GAIN"] == "-6.00 dB"
 
 
-def test_overwrite_true_rewrites_even_when_matching(tmp_path, monkeypatch):
+def test_overwrite_mode_rewrites_even_when_matching(tmp_path, monkeypatch):
     path = tmp_path / "track.flac"
     path.touch()
     tagger = _tagger(
@@ -77,7 +77,35 @@ def test_overwrite_true_rewrites_even_when_matching(tmp_path, monkeypatch):
     )
 
     result = tagger.write_replaygain(
-        str(path), LoudnessInfo(track_gain_db=-6.0), overwrite=True
+        str(path), LoudnessInfo(track_gain_db=-6.0), mode="overwrite"
+    )
+
+    assert result.success is True
+    assert result.message == "Tags written"
+
+
+def test_skip_mode_never_rewrites_existing_tags(tmp_path, monkeypatch):
+    path = tmp_path / "track.flac"
+    path.touch()
+    tagger = _tagger(
+        monkeypatch, existing={"REPLAYGAIN_TRACK_GAIN": "-3.00 dB"}
+    )
+
+    result = tagger.write_replaygain(
+        str(path), LoudnessInfo(track_gain_db=-6.0), mode="skip"
+    )
+
+    assert result.success is True
+    assert result.message == "Skipped – existing ReplayGain tags"
+
+
+def test_skip_mode_writes_when_no_existing_tags(tmp_path, monkeypatch):
+    path = tmp_path / "track.flac"
+    path.touch()
+    tagger = _tagger(monkeypatch, existing={})
+
+    result = tagger.write_replaygain(
+        str(path), LoudnessInfo(track_gain_db=-6.0), mode="skip"
     )
 
     assert result.success is True

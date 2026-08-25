@@ -36,10 +36,11 @@ export const JobCreateSchema = {
             title: 'Dry Run',
             default: true
         },
-        overwrite_existing: {
-            type: 'boolean',
-            title: 'Overwrite Existing',
-            default: false
+        write_mode: {
+            type: 'string',
+            enum: ['skip', 'fix', 'overwrite'],
+            title: 'Write Mode',
+            default: 'fix'
         }
     },
     type: 'object',
@@ -81,10 +82,10 @@ export const JobPublicSchema = {
             title: 'Dry Run',
             default: true
         },
-        overwrite_existing: {
-            type: 'boolean',
-            title: 'Overwrite Existing',
-            default: false
+        write_mode: {
+            type: 'string',
+            title: 'Write Mode',
+            default: 'fix'
         },
         status: {
             type: 'string',

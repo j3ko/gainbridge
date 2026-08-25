@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Literal
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -103,7 +104,7 @@ class JobBase(SQLModel):
     source_name: str = Field(index=True)
     library_id: str | None = None
     dry_run: bool = True
-    overwrite_existing: bool = False
+    write_mode: str = "fix"  # skip|fix|overwrite
     status: str = Field(
         default="pending", index=True
     )  # pending|running|completed|failed|cancelled
@@ -125,7 +126,7 @@ class JobCreate(SQLModel):
     source_name: str
     library_id: str | None = None
     dry_run: bool = True
-    overwrite_existing: bool = False
+    write_mode: Literal["skip", "fix", "overwrite"] = "fix"
 
 
 class JobPublic(JobBase):

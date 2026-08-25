@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 from mutagen import File as MutagenFile
 from mutagen.flac import FLAC
@@ -8,6 +9,8 @@ from mutagen.id3 import ID3, TXXX, ID3NoHeaderError
 from mutagen.oggvorbis import OggVorbis
 
 from app.schemas.gain import LoudnessInfo, WriteResult
+
+WriteMode = Literal["skip", "fix", "overwrite"]
 
 
 class TaggerService:
@@ -63,16 +66,23 @@ class TaggerService:
         path: str,
         loudness: LoudnessInfo,
         *,
-        overwrite: bool = False,
+        mode: WriteMode = "fix",
         dry_run: bool = False,
     ) -> WriteResult:
         p = Path(path)
         if not p.is_file():
             return WriteResult(path=path, success=False, message="File not found")
 
-        if not overwrite:
+        if mode != "overwrite":
             existing = self.read_existing_rg(path)
             if any("GAIN" in k for k in existing):
+                if mode == "skip":
+                    return WriteResult(
+                        path=path,
+                        success=True,
+                        message="Skipped – existing ReplayGain tags",
+                    )
+                # mode == "fix": only rewrite if we can prove it's wrong
                 if loudness.track_gain_db is None:
                     return WriteResult(
                         path=path,

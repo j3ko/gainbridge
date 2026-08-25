@@ -2,9 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { RefreshCw } from "lucide-react"
 import { useState } from "react"
 
-import { JobsService, SourcesService } from "@/client"
+import { JobsService, SourcesService, type write_mode } from "@/client"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogClose,
@@ -17,12 +16,14 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { LoadingButton } from "@/components/ui/loading-button"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
+import { writeModeOptions } from "./writeModeOptions"
 
 const SyncAll = () => {
   const [isOpen, setIsOpen] = useState(false)
-  const [overwriteExisting, setOverwriteExisting] = useState(false)
+  const [writeMode, setWriteMode] = useState<write_mode>("fix")
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
@@ -36,7 +37,7 @@ const SyncAll = () => {
             requestBody: {
               source_name: source.name,
               dry_run: false,
-              overwrite_existing: overwriteExisting,
+              write_mode: writeMode,
             },
           }),
         ),
@@ -62,7 +63,7 @@ const SyncAll = () => {
       open={isOpen}
       onOpenChange={(open) => {
         setIsOpen(open)
-        if (open) setOverwriteExisting(false)
+        if (open) setWriteMode("fix")
       }}
     >
       <DialogTrigger asChild>
@@ -79,18 +80,30 @@ const SyncAll = () => {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-center gap-3 py-4">
-          <Checkbox
-            id="overwrite-existing-all"
-            checked={overwriteExisting}
-            onCheckedChange={(checked) =>
-              setOverwriteExisting(checked === true)
-            }
-          />
-          <Label htmlFor="overwrite-existing-all" className="font-normal">
-            Overwrite existing ReplayGain tags
-          </Label>
-        </div>
+        <RadioGroup
+          value={writeMode}
+          onValueChange={(value) => setWriteMode(value as write_mode)}
+          className="py-2"
+        >
+          {writeModeOptions.map((option) => (
+            <div key={option.value} className="flex items-start gap-3">
+              <RadioGroupItem
+                value={option.value}
+                id={`write-mode-all-${option.value}`}
+                className="mt-1"
+              />
+              <Label
+                htmlFor={`write-mode-all-${option.value}`}
+                className="flex flex-col items-start gap-1 font-normal"
+              >
+                {option.label}
+                <span className="text-sm text-muted-foreground">
+                  {option.description}
+                </span>
+              </Label>
+            </div>
+          ))}
+        </RadioGroup>
 
         <DialogFooter>
           <DialogClose asChild>

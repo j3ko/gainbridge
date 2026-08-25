@@ -8,8 +8,10 @@ export type JobCreate = {
     source_name: string;
     library_id?: (string | null);
     dry_run?: boolean;
-    overwrite_existing?: boolean;
+    write_mode?: 'skip' | 'fix' | 'overwrite';
 };
+
+export type write_mode = 'skip' | 'fix' | 'overwrite';
 
 export type JobLog = {
     log: string;
@@ -19,7 +21,7 @@ export type JobPublic = {
     source_name: string;
     library_id?: (string | null);
     dry_run?: boolean;
-    overwrite_existing?: boolean;
+    write_mode?: string;
     status?: string;
     total?: number;
     processed?: number;

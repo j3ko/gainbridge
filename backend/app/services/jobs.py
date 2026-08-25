@@ -5,7 +5,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from croniter import croniter
 from sqlmodel import Session, col, select
@@ -16,7 +16,7 @@ from app.models import Job, JobCreate, PathMapping, Source, SourceCreate
 from app.schemas.gain import TrackInfo
 from app.services.jellyfin import JellyfinService
 from app.services.plex import PlexService
-from app.services.tagger import TaggerService
+from app.services.tagger import TaggerService, WriteMode
 
 logger = logging.getLogger(__name__)
 
@@ -174,7 +174,7 @@ class JobManager:
             source_name=body.source_name,
             library_id=body.library_id,
             dry_run=body.dry_run,
-            overwrite_existing=body.overwrite_existing,
+            write_mode=body.write_mode,
             status="pending",
         )
         session.add(job)
@@ -200,7 +200,7 @@ class JobManager:
                     JobCreate(
                         source_name=source.name,
                         dry_run=False,
-                        overwrite_existing=False,
+                        write_mode="fix",
                     ),
                     skip_if_running=True,
                 )
@@ -267,7 +267,9 @@ class JobManager:
             path_mappings = [(m.remote_path, m.local_path) for m in cfg.path_mappings]
             library_id = job.library_id
             dry_run = job.dry_run
-            overwrite = job.overwrite_existing
+            # write_mode is validated to one of WriteMode's values by
+            # JobCreate at job-creation time; the DB column is a plain str.
+            write_mode = cast(WriteMode, job.write_mode)
 
         try:
             if source_type == "plex":
@@ -277,7 +279,7 @@ class JobManager:
                     token,
                     library_id,
                     dry_run,
-                    overwrite,
+                    write_mode,
                     path_mappings,
                 )
             else:
@@ -288,7 +290,7 @@ class JobManager:
                     user_id,
                     library_id,
                     dry_run,
-                    overwrite,
+                    write_mode,
                     path_mappings,
                 )
             self._update_job(job_id, status="completed", message="Done")
@@ -326,7 +328,7 @@ class JobManager:
         token: str,
         library_id: str | None,
         dry_run: bool,
-        overwrite: bool,
+        write_mode: WriteMode,
         path_mappings: list[tuple[str, str]],
     ) -> None:
         svc = PlexService(base_url, token)
@@ -336,7 +338,7 @@ class JobManager:
         for track in tracks:
             try:
                 info = svc.get_track_info(track)
-                self._process_track(job_id, info, dry_run, overwrite, path_mappings)
+                self._process_track(job_id, info, dry_run, write_mode, path_mappings)
             except Exception as e:
                 self._bump(job_id, processed=1, errors=1)
                 logger.warning("[job %s] error (track fetch failed): %s", job_id, e)
@@ -349,7 +351,7 @@ class JobManager:
         user_id: str | None,
         library_id: str | None,
         dry_run: bool,
-        overwrite: bool,
+        write_mode: WriteMode,
         path_mappings: list[tuple[str, str]],
     ) -> None:
         svc = JellyfinService(base_url, token, user_id=user_id)
@@ -359,7 +361,7 @@ class JobManager:
             for item in items:
                 try:
                     info = svc.get_track_info(item)
-                    self._process_track(job_id, info, dry_run, overwrite, path_mappings)
+                    self._process_track(job_id, info, dry_run, write_mode, path_mappings)
                 except Exception as e:
                     self._bump(job_id, processed=1, errors=1)
                     logger.warning("[job %s] error (track fetch failed): %s", job_id, e)
@@ -371,7 +373,7 @@ class JobManager:
         job_id: str,
         info: TrackInfo,
         dry_run: bool,
-        overwrite: bool,
+        write_mode: WriteMode,
         path_mappings: list[tuple[str, str]],
     ) -> None:
         self._bump(job_id, processed=1)
@@ -387,7 +389,7 @@ class JobManager:
         result = self._tagger.write_replaygain(
             mapped_path,
             info.loudness,
-            overwrite=overwrite,
+            mode=write_mode,
             dry_run=dry_run,
         )
         if result.success:

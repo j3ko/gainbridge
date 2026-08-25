@@ -1,7 +1,12 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
 import type { JobPublic } from "@/client"
+import { writeModeOptions } from "@/components/Sources/writeModeOptions"
 import { Badge } from "@/components/ui/badge"
+
+const writeModeLabels = Object.fromEntries(
+  writeModeOptions.map((option) => [option.value, option.label]),
+)
 
 const statusVariant: Record<
   string,
@@ -63,6 +68,18 @@ export const columns: ColumnDef<JobPublic>[] = [
     accessorKey: "dry_run",
     header: "Mode",
     cell: ({ row }) => (row.original.dry_run ? "Dry run" : "Write"),
+  },
+  {
+    accessorKey: "write_mode",
+    header: "Write Mode",
+    cell: ({ row }) => {
+      const mode = row.original.write_mode ?? "fix"
+      return (
+        <span className="text-muted-foreground text-sm">
+          {writeModeLabels[mode] ?? mode}
+        </span>
+      )
+    },
   },
   {
     accessorKey: "created_at",

@@ -43,7 +43,7 @@ def test_process_track_logs_missing_path_or_loudness(manager, caplog):
     _add_job(session)
     caplog.set_level(logging.INFO)
 
-    manager._process_track("job-1", _track(gain=None), False, False, [])
+    manager._process_track("job-1", _track(gain=None), False, "fix", [])
 
     assert any(
         "[job job-1] skipped" in r.message and "missing path or loudness" in r.message
@@ -63,7 +63,7 @@ def test_process_track_logs_tagger_skip(manager, caplog, monkeypatch):
     )
     caplog.set_level(logging.INFO)
 
-    manager._process_track("job-1", _track(), False, False, [])
+    manager._process_track("job-1", _track(), False, "fix", [])
 
     assert any(
         "[job job-1] skipped" in r.message
@@ -84,7 +84,7 @@ def test_process_track_logs_tagger_error(manager, caplog, monkeypatch):
     )
     caplog.set_level(logging.INFO)
 
-    manager._process_track("job-1", _track(), False, False, [])
+    manager._process_track("job-1", _track(), False, "fix", [])
 
     assert any(
         "[job job-1] error" in r.message and "No track gain available" in r.message
@@ -102,7 +102,7 @@ def test_process_track_successful_write_is_not_logged(manager, caplog, monkeypat
     )
     caplog.set_level(logging.INFO)
 
-    manager._process_track("job-1", _track(), False, False, [])
+    manager._process_track("job-1", _track(), False, "fix", [])
 
     assert not any("[job job-1]" in r.message for r in caplog.records)
 
@@ -134,7 +134,7 @@ def test_run_plex_continues_past_a_bad_track(manager, caplog, monkeypatch):
     )
     caplog.set_level(logging.WARNING)
 
-    manager._run_plex("job-1", "http://x", "t", None, False, False, [])
+    manager._run_plex("job-1", "http://x", "t", None, False, "fix", [])
 
     with Session(engine) as check_session:
         job = check_session.get(Job, "job-1")
