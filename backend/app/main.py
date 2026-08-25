@@ -44,6 +44,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     task.cancel()
     with contextlib.suppress(asyncio.CancelledError):
         await task
+    await asyncio.to_thread(job_manager.shutdown)
 
 
 app = FastAPI(

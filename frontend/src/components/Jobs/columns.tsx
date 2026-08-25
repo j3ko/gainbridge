@@ -1,11 +1,12 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
 import type { JobPublic } from "@/client"
+import CancelJob from "@/components/Jobs/CancelJob"
 import { writeModeOptions } from "@/components/Sources/writeModeOptions"
 import { Badge } from "@/components/ui/badge"
 
-const writeModeLabels = Object.fromEntries(
-  writeModeOptions.map((option) => [option.value, option.label]),
+const writeModeShortLabels = Object.fromEntries(
+  writeModeOptions.map((option) => [option.value, option.shortLabel]),
 )
 
 const statusVariant: Record<
@@ -41,58 +42,75 @@ export const columns: ColumnDef<JobPublic>[] = [
     id: "progress",
     header: "Progress",
     cell: ({ row }) => {
-      const { processed = 0, total = 0 } = row.original
+      const {
+        processed = 0,
+        total = 0,
+        written = 0,
+        skipped = 0,
+        errors = 0,
+      } = row.original
       return (
-        <span className="text-muted-foreground text-sm">
-          {processed} / {total || "?"}
-        </span>
+        <div
+          className="text-sm whitespace-nowrap"
+          title={`${written} written, ${skipped} skipped, ${errors} errors`}
+        >
+          <div className="text-muted-foreground">
+            {processed} / {total || "?"}
+          </div>
+          <div className="flex gap-1.5 text-xs">
+            <span>{written}w</span>
+            <span className="text-muted-foreground">{skipped}s</span>
+            {errors > 0 && <span className="text-destructive">{errors}e</span>}
+          </div>
+        </div>
       )
     },
   },
   {
-    accessorKey: "written",
-    header: "Written",
-    cell: ({ row }) => row.original.written ?? 0,
-  },
-  {
-    accessorKey: "skipped",
-    header: "Skipped",
-    cell: ({ row }) => row.original.skipped ?? 0,
-  },
-  {
-    accessorKey: "errors",
-    header: "Errors",
-    cell: ({ row }) => row.original.errors ?? 0,
-  },
-  {
-    accessorKey: "dry_run",
+    id: "mode",
     header: "Mode",
-    cell: ({ row }) => (row.original.dry_run ? "Dry run" : "Write"),
-  },
-  {
-    accessorKey: "write_mode",
-    header: "Write Mode",
     cell: ({ row }) => {
       const mode = row.original.write_mode ?? "fix"
       return (
-        <span className="text-muted-foreground text-sm">
-          {writeModeLabels[mode] ?? mode}
-        </span>
+        <div className="flex flex-col text-sm whitespace-nowrap">
+          <span>{row.original.dry_run ? "Dry run" : "Write"}</span>
+          <span className="text-muted-foreground text-xs">
+            {writeModeShortLabels[mode] ?? mode}
+          </span>
+        </div>
       )
     },
   },
   {
     accessorKey: "created_at",
     header: "Started",
-    cell: ({ row }) => new Date(row.original.created_at).toLocaleString(),
+    cell: ({ row }) => (
+      <span className="whitespace-nowrap">
+        {new Date(row.original.created_at).toLocaleString(undefined, {
+          dateStyle: "short",
+          timeStyle: "short",
+        })}
+      </span>
+    ),
   },
   {
     id: "message",
     header: "Message",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground text-sm block max-w-[400px] whitespace-normal break-words">
-        {row.original.message || "—"}
-      </span>
-    ),
+    cell: ({ row }) => {
+      const message = row.original.message || "—"
+      return (
+        <span
+          title={message}
+          className="text-muted-foreground text-sm block max-w-[160px] truncate"
+        >
+          {message}
+        </span>
+      )
+    },
+  },
+  {
+    id: "actions",
+    header: "",
+    cell: ({ row }) => <CancelJob job={row.original} />,
   },
 ]

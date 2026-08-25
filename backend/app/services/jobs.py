@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import logging
+import threading
 import uuid
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import wait as wait_futures
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, cast
@@ -58,9 +60,15 @@ def _remap_path(path: str, mappings: list[tuple[str, str]]) -> str:
 
 
 class JobManager:
+    # How long shutdown() waits for active jobs to notice cancellation and
+    # stop before giving up on a clean exit.
+    _SHUTDOWN_TIMEOUT = 30.0
+
     def __init__(self) -> None:
         self._executor = ThreadPoolExecutor(max_workers=1)
         self._tagger = TaggerService()
+        self._cancel_events: dict[str, threading.Event] = {}
+        self._futures: dict[str, Future[None]] = {}
 
     # ----- sources -----
     def add_source(self, session: Session, data: SourceCreate) -> Source:
@@ -169,6 +177,7 @@ class JobManager:
                 return None
 
         job_id = str(uuid.uuid4())
+        self._cancel_events[job_id] = threading.Event()
         job = Job(
             id=job_id,
             source_name=body.source_name,
@@ -181,8 +190,59 @@ class JobManager:
         session.commit()
         session.refresh(job)
 
-        self._executor.submit(self._run_job, job_id)
+        self._futures[job_id] = self._executor.submit(self._run_job, job_id)
         return job
+
+    def cancel_job(self, session: Session, job_id: str) -> Job | None:
+        job = session.get(Job, job_id)
+        if not job:
+            return None
+        if job.status not in ("pending", "running"):
+            raise ValueError(f"Job is not running (status={job.status})")
+
+        event = self._cancel_events.get(job_id)
+        if event:
+            event.set()
+
+        if job.status == "pending":
+            # Not yet picked up by the worker thread, so nothing else is
+            # mutating this row -- safe to mark it cancelled directly here.
+            # A running job's own worker thread finalizes its status once
+            # it notices the event, so only one side ever writes it.
+            job.status = "cancelled"
+            job.message = "Cancelled"
+            job.updated_at = _utcnow()
+            session.add(job)
+            session.commit()
+            session.refresh(job)
+        return job
+
+    def cancel_all_active(self) -> None:
+        with Session(engine) as session:
+            active = session.exec(
+                select(Job).where(col(Job.status).in_(["pending", "running"]))
+            ).all()
+            for job in active:
+                assert job.id is not None
+                try:
+                    self.cancel_job(session, job.id)
+                except ValueError:
+                    pass
+
+    def shutdown(self) -> None:
+        """Cancel any active jobs and wait briefly for them to stop, so a
+        SIGTERM (or similar) doesn't kill the process mid-write."""
+        self.cancel_all_active()
+        futures = list(self._futures.values())
+        if futures:
+            _, not_done = wait_futures(futures, timeout=self._SHUTDOWN_TIMEOUT)
+            if not_done:
+                logger.warning(
+                    "shutdown: %d job(s) did not stop within %.0fs",
+                    len(not_done),
+                    self._SHUTDOWN_TIMEOUT,
+                )
+        self._executor.shutdown(wait=False, cancel_futures=True)
 
     def run_due_schedules(self) -> None:
         now = _utcnow()
@@ -246,32 +306,47 @@ class JobManager:
             session.add(job)
             session.commit()
 
+    def _cleanup_job(self, job_id: str) -> None:
+        self._cancel_events.pop(job_id, None)
+        self._futures.pop(job_id, None)
+
     def _run_job(self, job_id: str) -> None:
+        # Falls back to a fresh (never-set) Event if this job's entry was
+        # somehow already cleaned up, so the checks below are always safe.
+        cancel_event = self._cancel_events.get(job_id, threading.Event())
+        if cancel_event.is_set():
+            # Cancelled while still queued behind another job; the worker
+            # never got a chance to touch it.
+            self._update_job(job_id, status="cancelled", message="Cancelled")
+            self._cleanup_job(job_id)
+            return
+
         self._update_job(job_id, status="running", message="Running")
-
-        with Session(engine) as session:
-            job = session.get(Job, job_id)
-            if not job:
-                return
-            logger.info("[job %s] started: source=%s", job_id, job.source_name)
-            cfg = self.get_source(session, job.source_name)
-            if not cfg:
-                self._update_job(job_id, status="failed", message="Source missing")
-                return
-
-            # snapshot values for the worker thread
-            source_type = cfg.type
-            base_url = cfg.base_url
-            token = cfg.token
-            user_id = cfg.user_id
-            path_mappings = [(m.remote_path, m.local_path) for m in cfg.path_mappings]
-            library_id = job.library_id
-            dry_run = job.dry_run
-            # write_mode is validated to one of WriteMode's values by
-            # JobCreate at job-creation time; the DB column is a plain str.
-            write_mode = cast(WriteMode, job.write_mode)
-
         try:
+            with Session(engine) as session:
+                job = session.get(Job, job_id)
+                if not job:
+                    return
+                logger.info("[job %s] started: source=%s", job_id, job.source_name)
+                cfg = self.get_source(session, job.source_name)
+                if not cfg:
+                    self._update_job(job_id, status="failed", message="Source missing")
+                    return
+
+                # snapshot values for the worker thread
+                source_type = cfg.type
+                base_url = cfg.base_url
+                token = cfg.token
+                user_id = cfg.user_id
+                path_mappings = [
+                    (m.remote_path, m.local_path) for m in cfg.path_mappings
+                ]
+                library_id = job.library_id
+                dry_run = job.dry_run
+                # write_mode is validated to one of WriteMode's values by
+                # JobCreate at job-creation time; the DB column is a plain str.
+                write_mode = cast(WriteMode, job.write_mode)
+
             if source_type == "plex":
                 self._run_plex(
                     job_id,
@@ -281,6 +356,7 @@ class JobManager:
                     dry_run,
                     write_mode,
                     path_mappings,
+                    cancel_event,
                 )
             else:
                 self._run_jellyfin(
@@ -292,11 +368,17 @@ class JobManager:
                     dry_run,
                     write_mode,
                     path_mappings,
+                    cancel_event,
                 )
-            self._update_job(job_id, status="completed", message="Done")
+            self._update_job(
+                job_id,
+                status="cancelled" if cancel_event.is_set() else "completed",
+                message="Cancelled" if cancel_event.is_set() else "Done",
+            )
         except Exception as e:
             self._update_job(job_id, status="failed", message=str(e))
         finally:
+            self._cleanup_job(job_id)
             with Session(engine) as session:
                 job = session.get(Job, job_id)
                 if job:
@@ -330,12 +412,15 @@ class JobManager:
         dry_run: bool,
         write_mode: WriteMode,
         path_mappings: list[tuple[str, str]],
+        cancel_event: threading.Event,
     ) -> None:
         svc = PlexService(base_url, token)
         tracks = list(svc.iter_tracks(library_id))
         self._update_job(job_id, total=len(tracks))
 
         for track in tracks:
+            if cancel_event.is_set():
+                break
             try:
                 info = svc.get_track_info(track)
                 self._process_track(job_id, info, dry_run, write_mode, path_mappings)
@@ -353,12 +438,15 @@ class JobManager:
         dry_run: bool,
         write_mode: WriteMode,
         path_mappings: list[tuple[str, str]],
+        cancel_event: threading.Event,
     ) -> None:
         svc = JellyfinService(base_url, token, user_id=user_id)
         try:
             items = list(svc.iter_audio_items(library_id))
             self._update_job(job_id, total=len(items))
             for item in items:
+                if cancel_event.is_set():
+                    break
                 try:
                     info = svc.get_track_info(item)
                     self._process_track(job_id, info, dry_run, write_mode, path_mappings)

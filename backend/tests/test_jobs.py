@@ -1,9 +1,11 @@
 import logging
+import threading
 
 import pytest
+from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
-from app.models import Job
+from app.models import Job, JobCreate, Source
 from app.schemas.gain import LoudnessInfo, TrackInfo, WriteResult
 from app.services import jobs as jobs_module
 from app.services.jobs import JobManager
@@ -11,7 +13,14 @@ from app.services.jobs import JobManager
 
 @pytest.fixture
 def manager(monkeypatch):
-    engine = create_engine("sqlite://", connect_args={"check_same_thread": False})
+    # StaticPool: an in-memory sqlite db is otherwise per-connection, so the
+    # real executor worker thread used by the shutdown/cancellation tests
+    # would see an empty database without a single shared connection.
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     SQLModel.metadata.create_all(engine)
     monkeypatch.setattr(jobs_module, "engine", engine)
     manager = JobManager()
@@ -20,7 +29,8 @@ def manager(monkeypatch):
 
 
 def _add_job(session, job_id="job-1", **overrides):
-    job = Job(id=job_id, source_name="lib", status="running", **overrides)
+    fields = {"source_name": "lib", "status": "running", **overrides}
+    job = Job(id=job_id, **fields)
     session.add(job)
     session.commit()
     return job
@@ -134,7 +144,9 @@ def test_run_plex_continues_past_a_bad_track(manager, caplog, monkeypatch):
     )
     caplog.set_level(logging.WARNING)
 
-    manager._run_plex("job-1", "http://x", "t", None, False, "fix", [])
+    manager._run_plex(
+        "job-1", "http://x", "t", None, False, "fix", [], threading.Event()
+    )
 
     with Session(engine) as check_session:
         job = check_session.get(Job, "job-1")
@@ -147,6 +159,146 @@ def test_run_plex_continues_past_a_bad_track(manager, caplog, monkeypatch):
         "[job job-1] error (track fetch failed): boom" in r.message
         for r in caplog.records
     )
+
+
+# ----- cancellation -----
+
+
+def test_run_plex_stops_when_cancel_event_is_set(manager, monkeypatch):
+    manager, session, engine = manager
+    _add_job(session)
+    monkeypatch.setattr(jobs_module, "PlexService", _FakePlexService)
+    monkeypatch.setattr(
+        manager._tagger,
+        "write_replaygain",
+        lambda *a, **kw: WriteResult(path="x", success=True, message="Tags written"),
+    )
+    cancel_event = threading.Event()
+    cancel_event.set()
+
+    manager._run_plex("job-1", "http://x", "t", None, False, "fix", [], cancel_event)
+
+    with Session(engine) as check_session:
+        job = check_session.get(Job, "job-1")
+        assert job.processed == 0
+        assert job.written == 0
+
+
+def test_cancel_job_not_found_returns_none(manager):
+    manager, session, _ = manager
+    assert manager.cancel_job(session, "missing") is None
+
+
+def test_cancel_job_already_completed_raises(manager):
+    manager, session, _ = manager
+    _add_job(session, status="completed")
+    with pytest.raises(ValueError, match="not running"):
+        manager.cancel_job(session, "job-1")
+
+
+def test_cancel_job_pending_marks_cancelled_immediately(manager):
+    manager, session, _ = manager
+    _add_job(session, status="pending")
+
+    job = manager.cancel_job(session, "job-1")
+
+    assert job is not None
+    assert job.status == "cancelled"
+    assert job.message == "Cancelled"
+
+
+def test_cancel_job_running_only_sets_event_leaves_status_to_worker(manager):
+    manager, session, _ = manager
+    _add_job(session, status="running")
+    event = threading.Event()
+    manager._cancel_events["job-1"] = event
+
+    job = manager.cancel_job(session, "job-1")
+
+    assert event.is_set()
+    assert job is not None
+    assert job.status == "running"  # the worker thread finalizes this, not cancel_job
+
+
+def test_run_job_already_cancelled_finishes_as_cancelled_without_running(manager):
+    manager, session, engine = manager
+    _add_job(session, status="pending")
+    event = threading.Event()
+    event.set()
+    manager._cancel_events["job-1"] = event
+
+    manager._run_job("job-1")
+
+    with Session(engine) as check_session:
+        job = check_session.get(Job, "job-1")
+        assert job.status == "cancelled"
+        assert job.message == "Cancelled"
+    assert "job-1" not in manager._cancel_events
+    assert "job-1" not in manager._futures
+
+
+def test_create_job_registers_cancel_event(manager, monkeypatch):
+    manager, session, _ = manager
+    monkeypatch.setattr(manager._executor, "submit", lambda *a, **kw: None)
+    session.add(Source(name="lib", type="plex", base_url="http://x", token="t"))
+    session.commit()
+
+    job = manager.create_job(session, JobCreate(source_name="lib"))
+
+    assert job is not None
+    assert job.id in manager._cancel_events
+    assert not manager._cancel_events[job.id].is_set()
+
+
+def test_shutdown_with_no_active_jobs_returns_immediately(manager):
+    manager, _, _ = manager
+    manager.shutdown()  # should not raise or hang
+
+
+def test_shutdown_cancels_and_waits_for_a_running_job(manager, monkeypatch):
+    """Simulates the SIGTERM path: a job is actively processing tracks when
+    shutdown() is called, and it should stop cooperatively rather than being
+    left running or racing to completion."""
+    manager, session, engine = manager
+    session.add(Source(name="lib", type="plex", base_url="http://x", token="t"))
+    session.commit()
+
+    started = threading.Event()
+    release = threading.Event()
+
+    class _BlockingFakePlexService:
+        def __init__(self, base_url, token):
+            pass
+
+        def iter_tracks(self, library_id):
+            return list(range(5))
+
+        def get_track_info(self, track):
+            started.set()
+            assert release.wait(timeout=5), "test setup: release was never set"
+            return _track(path=f"/music/{track}.flac")
+
+    monkeypatch.setattr(jobs_module, "PlexService", _BlockingFakePlexService)
+    monkeypatch.setattr(
+        manager._tagger,
+        "write_replaygain",
+        lambda *a, **kw: WriteResult(path="x", success=True, message="Tags written"),
+    )
+
+    job = manager.create_job(session, JobCreate(source_name="lib"))
+    assert job is not None
+    assert started.wait(timeout=5), "worker never reached the first track"
+
+    # Flag cancellation while the worker is still blocked fetching track 0,
+    # then let it proceed -- it must observe cancellation before track 1.
+    manager.cancel_all_active()
+    release.set()
+    manager.shutdown()
+
+    with Session(engine) as check_session:
+        final = check_session.get(Job, job.id)
+        assert final.status == "cancelled"
+        assert final.processed == 1
 
 
 # ----- read_log -----

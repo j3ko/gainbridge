@@ -31,3 +31,14 @@ def get_job(session: SessionDep, job_id: str) -> Job:
     if not job:
         raise HTTPException(404, "Job not found")
     return job
+
+
+@router.post("/{job_id}/cancel", response_model=JobPublic)
+def cancel_job(session: SessionDep, job_id: str) -> Job:
+    try:
+        job = job_manager.cancel_job(session, job_id)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    if not job:
+        raise HTTPException(404, "Job not found")
+    return job

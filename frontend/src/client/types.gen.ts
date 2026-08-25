@@ -137,6 +137,12 @@ export type JobsGetJobData = {
 
 export type JobsGetJobResponse = (JobPublic);
 
+export type JobsCancelJobData = {
+    jobId: string;
+};
+
+export type JobsCancelJobResponse = (JobPublic);
+
 export type SourcesListSourcesResponse = (Array<SourcePublic>);
 
 export type SourcesAddSourceData = {
