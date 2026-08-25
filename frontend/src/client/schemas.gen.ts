@@ -142,6 +142,25 @@ export const JobPublicSchema = {
     title: 'JobPublic'
 } as const;
 
+export const JobsPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/JobPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'JobsPublic'
+} as const;
+
 export const LibraryInfoSchema = {
     properties: {
         id: {

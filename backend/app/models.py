@@ -135,5 +135,10 @@ class JobPublic(JobBase):
     updated_at: datetime
 
 
+class JobsPublic(SQLModel):
+    data: list[JobPublic]
+    count: int
+
+
 class JobLog(SQLModel):
     log: str

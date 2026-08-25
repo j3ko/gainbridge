@@ -51,6 +51,14 @@ class Settings(BaseSettings):
     SENTRY_DSN: HttpUrl | None = None
     SQLITE_DB_FILE: str = "gainbridge.db"
     LOG_FILE: str = "gainbridge.log"
+    # How long to keep finished (completed/failed/cancelled) job rows before
+    # a scheduler tick prunes them, so a long-running cron doesn't grow the
+    # jobs table forever.
+    JOB_RETENTION_DAYS: int = 30
+    # Size threshold at which the log file gets rotated (renamed to .1, .2,
+    # ...), and how many rotated backups to keep around.
+    LOG_MAX_BYTES: int = 10 * 1024 * 1024
+    LOG_BACKUP_COUNT: int = 5
 
     @computed_field  # type: ignore[prop-decorator]
     @property

@@ -34,6 +34,11 @@ export type JobPublic = {
     updated_at: string;
 };
 
+export type JobsPublic = {
+    data: Array<JobPublic>;
+    count: number;
+};
+
 export type LibraryInfo = {
     id: string;
     name: string;
@@ -117,13 +122,18 @@ export type ValidationError = {
     type: string;
 };
 
-export type JobsListJobsResponse = (Array<JobPublic>);
-
 export type JobsCreateJobData = {
     requestBody: JobCreate;
 };
 
 export type JobsCreateJobResponse = (JobPublic);
+
+export type JobsListJobsData = {
+    limit?: number;
+    skip?: number;
+};
+
+export type JobsListJobsResponse = (JobsPublic);
 
 export type JobsGetJobsLogData = {
     jobId?: (string | null);

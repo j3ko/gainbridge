@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.api.deps import SessionDep
-from app.models import Job, JobCreate, JobLog, JobPublic
+from app.models import Job, JobCreate, JobLog, JobPublic, JobsPublic
 from app.services.jobs import job_manager
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -15,9 +15,14 @@ def create_job(session: SessionDep, body: JobCreate) -> Job | None:
         raise HTTPException(400, str(e))
 
 
-@router.get("/", response_model=list[JobPublic])
-def list_jobs(session: SessionDep) -> list[Job]:
-    return job_manager.list_jobs(session)
+@router.get("/", response_model=JobsPublic)
+def list_jobs(
+    session: SessionDep,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=500),
+) -> JobsPublic:
+    jobs, count = job_manager.list_jobs(session, skip=skip, limit=limit)
+    return JobsPublic(data=jobs, count=count)
 
 
 @router.get("/log", response_model=JobLog)

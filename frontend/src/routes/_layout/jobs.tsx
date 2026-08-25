@@ -1,6 +1,8 @@
-import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
+import type { PaginationState } from "@tanstack/react-table"
 import { ScrollText } from "lucide-react"
+import { useState } from "react"
 
 import { JobsService } from "@/client"
 import { DataTable } from "@/components/Common/DataTable"
@@ -18,11 +20,21 @@ export const Route = createFileRoute("/_layout/jobs")({
 })
 
 function JobsTable() {
-  const { data: jobs, isPending } = useQuery({
-    queryKey: ["jobs"],
-    queryFn: () => JobsService.listJobs(),
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 25,
+  })
+
+  const { data, isPending } = useQuery({
+    queryKey: ["jobs", pagination.pageIndex, pagination.pageSize],
+    queryFn: () =>
+      JobsService.listJobs({
+        skip: pagination.pageIndex * pagination.pageSize,
+        limit: pagination.pageSize,
+      }),
+    placeholderData: keepPreviousData,
     refetchInterval: (query) => {
-      const hasActiveJob = query.state.data?.some(
+      const hasActiveJob = query.state.data?.data.some(
         (job) => job.status === "pending" || job.status === "running",
       )
       return hasActiveJob ? 2000 : false
@@ -35,7 +47,7 @@ function JobsTable() {
     )
   }
 
-  if (!jobs || jobs.length === 0) {
+  if (!data || data.data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-12">
         <div className="rounded-full bg-muted p-4 mb-4">
@@ -49,7 +61,15 @@ function JobsTable() {
     )
   }
 
-  return <DataTable columns={columns} data={jobs} />
+  return (
+    <DataTable
+      columns={columns}
+      data={data.data}
+      pagination={pagination}
+      onPaginationChange={setPagination}
+      rowCount={data.count}
+    />
+  )
 }
 
 function Jobs() {

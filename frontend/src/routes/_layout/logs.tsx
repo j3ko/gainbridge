@@ -37,16 +37,20 @@ function LogViewer() {
   const [displayedLog, setDisplayedLog] = useState("")
   const scrollRef = useRef<HTMLPreElement>(null)
 
-  const { data: jobs } = useQuery({
-    queryKey: ["jobs"],
-    queryFn: () => JobsService.listJobs(),
+  // Bounded to the most recent jobs -- this is a dropdown, not a paginated
+  // list, so we just cap how many show up rather than fetching every job
+  // that's ever run.
+  const { data: jobsPage } = useQuery({
+    queryKey: ["jobs", "recent"],
+    queryFn: () => JobsService.listJobs({ limit: 100 }),
     refetchInterval: (query) => {
-      const hasActiveJob = query.state.data?.some(
+      const hasActiveJob = query.state.data?.data.some(
         (job) => job.status === "pending" || job.status === "running",
       )
       return hasActiveJob ? 2000 : false
     },
   })
+  const jobs = jobsPage?.data
 
   const { data: jobLog, isPending } = useQuery({
     queryKey: ["jobs", "log", selectedJobId],

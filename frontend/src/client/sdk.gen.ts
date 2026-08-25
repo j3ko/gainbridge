@@ -3,21 +3,9 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { JobsListJobsResponse, JobsCreateJobData, JobsCreateJobResponse, JobsGetJobsLogData, JobsGetJobsLogResponse, JobsGetJobData, JobsGetJobResponse, JobsCancelJobData, JobsCancelJobResponse, SourcesListSourcesResponse, SourcesAddSourceData, SourcesAddSourceResponse, SourcesDeleteSourceData, SourcesDeleteSourceResponse, SourcesSetScheduleData, SourcesSetScheduleResponse, SourcesClearScheduleData, SourcesClearScheduleResponse, SourcesTestSourceData, SourcesTestSourceResponse, SourcesTestConnectionData, SourcesTestConnectionResponse, SourcesCreatePlexPinResponse, SourcesCheckPlexPinData, SourcesCheckPlexPinResponse, SourcesListPlexServersData, SourcesListPlexServersResponse, SourcesListLibrariesData, SourcesListLibrariesResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { JobsCreateJobData, JobsCreateJobResponse, JobsListJobsData, JobsListJobsResponse, JobsGetJobsLogData, JobsGetJobsLogResponse, JobsGetJobData, JobsGetJobResponse, JobsCancelJobData, JobsCancelJobResponse, SourcesListSourcesResponse, SourcesAddSourceData, SourcesAddSourceResponse, SourcesDeleteSourceData, SourcesDeleteSourceResponse, SourcesSetScheduleData, SourcesSetScheduleResponse, SourcesClearScheduleData, SourcesClearScheduleResponse, SourcesTestSourceData, SourcesTestSourceResponse, SourcesTestConnectionData, SourcesTestConnectionResponse, SourcesCreatePlexPinResponse, SourcesCheckPlexPinData, SourcesCheckPlexPinResponse, SourcesListPlexServersData, SourcesListPlexServersResponse, SourcesListLibrariesData, SourcesListLibrariesResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class JobsService {
-    /**
-     * List Jobs
-     * @returns JobPublic Successful Response
-     * @throws ApiError
-     */
-    public static listJobs(): CancelablePromise<JobsListJobsResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/jobs/'
-        });
-    }
-    
     /**
      * Create Job
      * @param data The data for the request.
@@ -31,6 +19,28 @@ export class JobsService {
             url: '/api/v1/jobs/',
             body: data.requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List Jobs
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns JobsPublic Successful Response
+     * @throws ApiError
+     */
+    public static listJobs(data: JobsListJobsData = {}): CancelablePromise<JobsListJobsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/jobs/',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
             errors: {
                 422: 'Validation Error'
             }

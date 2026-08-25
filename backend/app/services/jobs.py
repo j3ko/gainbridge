@@ -5,12 +5,12 @@ import threading
 import uuid
 from concurrent.futures import Future, ThreadPoolExecutor
 from concurrent.futures import wait as wait_futures
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, cast
 
 from croniter import croniter
-from sqlmodel import Session, col, select
+from sqlmodel import Session, col, func, select
 
 from app.core.config import settings
 from app.core.db import engine
@@ -279,9 +279,44 @@ class JobManager:
     def get_job(self, session: Session, job_id: str) -> Job | None:
         return session.get(Job, job_id)
 
-    def list_jobs(self, session: Session) -> list[Job]:
-        statement = select(Job).order_by(col(Job.created_at).desc())
-        return list(session.exec(statement).all())
+    def list_jobs(
+        self, session: Session, skip: int = 0, limit: int = 50
+    ) -> tuple[list[Job], int]:
+        count = session.exec(select(func.count()).select_from(Job)).one()
+        statement = (
+            select(Job)
+            .order_by(col(Job.created_at).desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        jobs = list(session.exec(statement).all())
+        return jobs, count
+
+    def prune_old_jobs(self) -> int:
+        """Delete finished job rows older than JOB_RETENTION_DAYS.
+
+        Called from the scheduler loop so a long-running cron doesn't grow
+        the jobs table forever. Only ever touches terminal-state jobs --
+        pending/running jobs are never pruned regardless of age.
+        """
+        cutoff = _utcnow() - timedelta(days=settings.JOB_RETENTION_DAYS)
+        with Session(engine) as session:
+            stale = session.exec(
+                select(Job).where(
+                    col(Job.status).in_(["completed", "failed", "cancelled"]),
+                    col(Job.updated_at) < cutoff,
+                )
+            ).all()
+            for job in stale:
+                session.delete(job)
+            if stale:
+                session.commit()
+                logger.info(
+                    "pruned %d job(s) older than %d day(s)",
+                    len(stale),
+                    settings.JOB_RETENTION_DAYS,
+                )
+            return len(stale)
 
     def read_log(self, job_id: str | None = None) -> str:
         log_path = Path(settings.LOG_FILE)

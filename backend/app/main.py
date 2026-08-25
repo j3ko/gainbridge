@@ -12,6 +12,7 @@ from starlette.middleware.cors import CORSMiddleware
 from app.api.main import api_router
 from app.core.config import settings
 from app.core.db import init_db
+from app.core.log_rotation import rotate_log_if_needed
 from app.core.logging_config import setup_logging
 from app.services.jobs import job_manager
 
@@ -31,6 +32,8 @@ async def _scheduler_loop() -> None:
     while True:
         try:
             await asyncio.to_thread(job_manager.run_due_schedules)
+            await asyncio.to_thread(job_manager.prune_old_jobs)
+            await asyncio.to_thread(rotate_log_if_needed)
         except Exception:
             logger.exception("scheduler tick failed")
         await asyncio.sleep(60)

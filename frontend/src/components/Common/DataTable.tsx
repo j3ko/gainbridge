@@ -3,6 +3,8 @@ import {
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
+  type OnChangeFn,
+  type PaginationState,
   useReactTable,
 } from "@tanstack/react-table"
 import {
@@ -32,18 +34,42 @@ import {
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  // Server-side pagination: pass all three to have `data` treated as just
+  // the current page (fetched with `pagination`'s pageIndex/pageSize) and
+  // `rowCount` as the total across all pages. Omit all three for the
+  // default client-side pagination over the full `data` array.
+  pagination?: PaginationState
+  onPaginationChange?: OnChangeFn<PaginationState>
+  rowCount?: number
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  pagination,
+  onPaginationChange,
+  rowCount,
 }: DataTableProps<TData, TValue>) {
+  const manualPagination =
+    pagination !== undefined && onPaginationChange !== undefined
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: manualPagination
+      ? undefined
+      : getPaginationRowModel(),
+    manualPagination,
+    rowCount: manualPagination ? rowCount : undefined,
+    state: manualPagination ? { pagination } : undefined,
+    onPaginationChange,
   })
+
+  const totalCount = manualPagination ? (rowCount ?? 0) : data.length
+  const pageRowCount = table.getRowModel().rows.length
+  const { pageIndex, pageSize } = table.getState().pagination
+  const rangeStart = pageRowCount === 0 ? 0 : pageIndex * pageSize + 1
+  const rangeEnd = pageRowCount === 0 ? 0 : rangeStart + pageRowCount - 1
 
   return (
     <div className="flex flex-col gap-4">
@@ -94,18 +120,8 @@ export function DataTable<TData, TValue>({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border-t bg-muted/20">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="text-sm text-muted-foreground">
-              Showing{" "}
-              {table.getState().pagination.pageIndex *
-                table.getState().pagination.pageSize +
-                1}{" "}
-              to{" "}
-              {Math.min(
-                (table.getState().pagination.pageIndex + 1) *
-                  table.getState().pagination.pageSize,
-                data.length,
-              )}{" "}
-              of{" "}
-              <span className="font-medium text-foreground">{data.length}</span>{" "}
+              Showing {rangeStart} to {rangeEnd} of{" "}
+              <span className="font-medium text-foreground">{totalCount}</span>{" "}
               entries
             </div>
             <div className="flex items-center gap-x-2">
