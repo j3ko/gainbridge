@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -16,6 +17,8 @@ from app.models import (
 from app.schemas.gain import LibraryInfo
 from app.services import plex_oauth
 from app.services.jobs import job_manager
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/sources", tags=["sources"])
 
@@ -65,6 +68,7 @@ def test_source(session: SessionDep, name: str) -> dict[str, Any]:
     except KeyError:
         raise HTTPException(404, "Source not found")
     except Exception as e:
+        logger.warning("source %r: connection test failed: %s", name, e)
         raise HTTPException(400, str(e))
 
 

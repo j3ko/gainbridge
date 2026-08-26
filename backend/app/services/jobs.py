@@ -147,24 +147,35 @@ class JobManager:
     def test_connection(
         self, type: str, base_url: str, token: str, user_id: str | None = None
     ) -> dict[str, Any]:
-        if type == "plex":
-            return PlexService(base_url, token).test_connection()
-        svc = JellyfinService(base_url, token, user_id=user_id)
+        logger.info("testing %s connection: %s", type, base_url)
         try:
-            return svc.test_connection()
-        finally:
-            svc.close()
+            if type == "plex":
+                result = PlexService(base_url, token).test_connection()
+            else:
+                svc = JellyfinService(base_url, token, user_id=user_id)
+                try:
+                    result = svc.test_connection()
+                finally:
+                    svc.close()
+        except Exception as e:
+            logger.warning("%s connection test failed: %s: %s", type, base_url, e)
+            raise
+        return result
 
     def get_libraries(
         self, type: str, base_url: str, token: str, user_id: str | None = None
     ) -> list[LibraryInfo]:
-        if type == "plex":
-            return PlexService(base_url, token).get_music_libraries()
-        svc = JellyfinService(base_url, token, user_id=user_id)
         try:
-            return svc.get_music_libraries()
-        finally:
-            svc.close()
+            if type == "plex":
+                return PlexService(base_url, token).get_music_libraries()
+            svc = JellyfinService(base_url, token, user_id=user_id)
+            try:
+                return svc.get_music_libraries()
+            finally:
+                svc.close()
+        except Exception as e:
+            logger.warning("failed to fetch %s libraries: %s: %s", type, base_url, e)
+            raise
 
     # ----- jobs -----
     def create_job(
@@ -423,6 +434,7 @@ class JobManager:
                 message="Cancelled" if cancel_event.is_set() else "Done",
             )
         except Exception as e:
+            logger.warning("[job %s] failed: %s", job_id, e)
             self._update_job(job_id, status="failed", message=str(e))
         finally:
             self._cleanup_job(job_id)
@@ -462,7 +474,11 @@ class JobManager:
         cancel_event: threading.Event,
     ) -> None:
         svc = PlexService(base_url, token)
-        tracks = list(svc.iter_tracks(library_id))
+        try:
+            tracks = list(svc.iter_tracks(library_id))
+        except Exception as e:
+            logger.warning("[job %s] failed to fetch tracks from plex: %s", job_id, e)
+            raise
         self._update_job(job_id, total=len(tracks))
 
         for track in tracks:
@@ -489,7 +505,13 @@ class JobManager:
     ) -> None:
         svc = JellyfinService(base_url, token, user_id=user_id)
         try:
-            items = list(svc.iter_audio_items(library_id))
+            try:
+                items = list(svc.iter_audio_items(library_id))
+            except Exception as e:
+                logger.warning(
+                    "[job %s] failed to fetch items from jellyfin: %s", job_id, e
+                )
+                raise
             self._update_job(job_id, total=len(items))
             for item in items:
                 if cancel_event.is_set():

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterator
 from typing import Any
 
@@ -8,15 +9,25 @@ from plexapi.server import PlexServer
 
 from app.schemas.gain import LibraryInfo, LoudnessInfo, TrackInfo
 
+logger = logging.getLogger(__name__)
+
 # Plex stores gain relative to its own reference (~-18 LUFS ReplayGain 2.0 style).
 # The `gain` / `albumGain` fields on the audio stream are already in dB.
 
 
 class PlexService:
     def __init__(self, base_url: str, token: str):
-        # plexapi declares py.typed but PlexServer.__init__ itself has no
-        # parameter annotations, so mypy strict can't type-check this call.
-        self.server = PlexServer(base_url, token)  # type: ignore[no-untyped-call]
+        logger.info("plex: connecting to %s", base_url)
+        try:
+            # plexapi declares py.typed but PlexServer.__init__ itself has no
+            # parameter annotations, so mypy strict can't type-check this call.
+            self.server = PlexServer(base_url, token)  # type: ignore[no-untyped-call]
+        except Exception as e:
+            logger.warning("plex: connection failed for %s: %s", base_url, e)
+            raise
+        logger.info(
+            "plex: connected to %s (server=%s)", base_url, self.server.friendlyName
+        )
 
     def get_music_libraries(self) -> list[LibraryInfo]:
         libs = []

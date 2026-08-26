@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterator
 from typing import Any
 
@@ -7,12 +8,15 @@ import httpx
 
 from app.schemas.gain import LibraryInfo, LoudnessInfo, TrackInfo
 
+logger = logging.getLogger(__name__)
+
 
 class JellyfinService:
     def __init__(self, base_url: str, api_key: str, user_id: str | None = None):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.user_id = user_id
+        logger.info("jellyfin: connecting to %s", self.base_url)
         self._client = httpx.Client(
             base_url=self.base_url,
             headers={
@@ -23,8 +27,22 @@ class JellyfinService:
         )
 
     def _get(self, path: str, params: dict[str, Any] | None = None) -> Any:
-        r = self._client.get(path, params=params or {})
-        r.raise_for_status()
+        try:
+            r = self._client.get(path, params=params or {})
+            r.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            logger.warning(
+                "jellyfin: request failed: GET %s%s -> %d",
+                self.base_url,
+                path,
+                e.response.status_code,
+            )
+            raise
+        except httpx.RequestError as e:
+            logger.warning(
+                "jellyfin: request failed: GET %s%s -> %s", self.base_url, path, e
+            )
+            raise
         return r.json()
 
     def ensure_user_id(self) -> str:
@@ -107,6 +125,12 @@ class JellyfinService:
 
     def test_connection(self) -> dict[str, Any]:
         info = self._get("/System/Info/Public")
+        logger.info(
+            "jellyfin: connection test succeeded for %s (server=%s, version=%s)",
+            self.base_url,
+            info.get("ServerName"),
+            info.get("Version"),
+        )
         return {
             "ok": True,
             "server_name": info.get("ServerName"),
