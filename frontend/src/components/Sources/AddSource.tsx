@@ -146,7 +146,10 @@ const AddSource = () => {
           Add Source
         </Button>
       </DialogTrigger>
-      <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-y-hidden p-0 sm:max-w-md">
+      <DialogContent
+        className="flex max-h-[85vh] flex-col gap-0 overflow-y-hidden p-0 sm:max-w-md"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <DialogHeader className="shrink-0 border-b bg-background px-6 py-6">
           <DialogTitle>Add Source</DialogTitle>
           <DialogDescription>

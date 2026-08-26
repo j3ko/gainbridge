@@ -170,7 +170,10 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
         <Pencil />
         Edit Source
       </DropdownMenuItem>
-      <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-y-hidden p-0 sm:max-w-md">
+      <DialogContent
+        className="flex max-h-[85vh] flex-col gap-0 overflow-y-hidden p-0 sm:max-w-md"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <Form {...form}>
           <form
             className="flex min-h-0 min-w-0 flex-1 flex-col"
