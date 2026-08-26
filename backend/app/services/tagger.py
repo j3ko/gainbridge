@@ -6,11 +6,17 @@ from typing import Literal
 from mutagen import File as MutagenFile
 from mutagen.flac import FLAC
 from mutagen.id3 import ID3, TXXX, ID3NoHeaderError
+from mutagen.mp4 import MP4, MP4FreeForm
 from mutagen.oggvorbis import OggVorbis
 
 from app.schemas.gain import LoudnessInfo, WriteResult
 
 WriteMode = Literal["skip", "fix", "overwrite"]
+
+# MP4/M4A has no native ReplayGain atom, so tags live in a freeform
+# "----" atom under this mean/name pair, same convention iTunes and
+# other taggers use.
+MP4_FREEFORM_MEAN = "com.apple.iTunes"
 
 
 class TaggerService:
@@ -39,11 +45,25 @@ class TaggerService:
             ):
                 # Vorbis/FLAC comments key by the plain field name; ID3
                 # (MP3) stores custom fields as TXXX frames keyed
-                # "TXXX:<desc>" instead.
-                for lookup in (key, key.lower(), f"TXXX:{key}"):
+                # "TXXX:<desc>" instead; MP4/M4A has no ReplayGain atom
+                # at all, so taggers (including us) stash it in a
+                # freeform "----:mean:name" atom, and other tools (e.g.
+                # mp4gain) write that name in lowercase.
+                for lookup in (
+                    key,
+                    key.lower(),
+                    f"TXXX:{key}",
+                    f"----:{MP4_FREEFORM_MEAN}:{key}",
+                    f"----:{MP4_FREEFORM_MEAN}:{key.lower()}",
+                ):
                     val = audio.tags.get(lookup)
                     if val:
-                        tags[key] = str(val[0] if isinstance(val, list) else val)
+                        item = val[0] if isinstance(val, list) else val
+                        tags[key] = (
+                            item.decode("utf-8", errors="replace")
+                            if isinstance(item, bytes)
+                            else str(item)
+                        )
                         break
         return tags
 
@@ -129,6 +149,8 @@ class TaggerService:
                 self._write_ogg(path, tags_to_write)
             elif suffix == ".mp3":
                 self._write_mp3(path, tags_to_write)
+            elif suffix in {".m4a", ".m4b", ".m4p", ".mp4"}:
+                self._write_mp4(path, tags_to_write)
             else:
                 # Generic fallback via mutagen.File
                 self._write_generic(path, tags_to_write)
@@ -164,6 +186,14 @@ class TaggerService:
             audio.delall(f"TXXX:{k}")  # type: ignore[no-untyped-call]
             audio.add(TXXX(encoding=3, desc=k, text=v))  # type: ignore[no-untyped-call]
         audio.save(path)
+
+    def _write_mp4(self, path: str, tags: dict[str, str]) -> None:
+        audio = MP4(path)  # type: ignore[no-untyped-call]
+        for k, v in tags.items():
+            audio[f"----:{MP4_FREEFORM_MEAN}:{k}"] = [
+                MP4FreeForm(v.encode("utf-8"))  # type: ignore[no-untyped-call]
+            ]
+        audio.save()  # type: ignore[no-untyped-call]
 
     def _write_generic(self, path: str, tags: dict[str, str]) -> None:
         audio = MutagenFile(path, easy=True)

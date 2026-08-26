@@ -1,4 +1,5 @@
 from mutagen.id3 import TXXX, ID3
+from mutagen.mp4 import MP4FreeForm
 
 from app.schemas.gain import LoudnessInfo
 from app.services.tagger import TaggerService
@@ -34,9 +35,7 @@ def test_no_existing_tags_and_no_loudness_fails(tmp_path, monkeypatch):
 def test_existing_tags_but_no_fresh_loudness_is_skipped_safely(tmp_path, monkeypatch):
     path = tmp_path / "track.flac"
     path.touch()
-    tagger = _tagger(
-        monkeypatch, existing={"REPLAYGAIN_TRACK_GAIN": "-6.00 dB"}
-    )
+    tagger = _tagger(monkeypatch, existing={"REPLAYGAIN_TRACK_GAIN": "-6.00 dB"})
 
     result = tagger.write_replaygain(str(path), LoudnessInfo(track_gain_db=None))
 
@@ -47,9 +46,7 @@ def test_existing_tags_but_no_fresh_loudness_is_skipped_safely(tmp_path, monkeyp
 def test_existing_tags_within_tolerance_are_skipped(tmp_path, monkeypatch):
     path = tmp_path / "track.flac"
     path.touch()
-    tagger = _tagger(
-        monkeypatch, existing={"REPLAYGAIN_TRACK_GAIN": "-6.05 dB"}
-    )
+    tagger = _tagger(monkeypatch, existing={"REPLAYGAIN_TRACK_GAIN": "-6.05 dB"})
 
     result = tagger.write_replaygain(str(path), LoudnessInfo(track_gain_db=-6.0))
 
@@ -60,9 +57,7 @@ def test_existing_tags_within_tolerance_are_skipped(tmp_path, monkeypatch):
 def test_existing_tags_outside_tolerance_are_rewritten(tmp_path, monkeypatch):
     path = tmp_path / "track.flac"
     path.touch()
-    tagger = _tagger(
-        monkeypatch, existing={"REPLAYGAIN_TRACK_GAIN": "-3.00 dB"}
-    )
+    tagger = _tagger(monkeypatch, existing={"REPLAYGAIN_TRACK_GAIN": "-3.00 dB"})
 
     result = tagger.write_replaygain(str(path), LoudnessInfo(track_gain_db=-6.0))
 
@@ -74,9 +69,7 @@ def test_existing_tags_outside_tolerance_are_rewritten(tmp_path, monkeypatch):
 def test_overwrite_mode_rewrites_even_when_matching(tmp_path, monkeypatch):
     path = tmp_path / "track.flac"
     path.touch()
-    tagger = _tagger(
-        monkeypatch, existing={"REPLAYGAIN_TRACK_GAIN": "-6.00 dB"}
-    )
+    tagger = _tagger(monkeypatch, existing={"REPLAYGAIN_TRACK_GAIN": "-6.00 dB"})
 
     result = tagger.write_replaygain(
         str(path), LoudnessInfo(track_gain_db=-6.0), mode="overwrite"
@@ -89,9 +82,7 @@ def test_overwrite_mode_rewrites_even_when_matching(tmp_path, monkeypatch):
 def test_skip_mode_never_rewrites_existing_tags(tmp_path, monkeypatch):
     path = tmp_path / "track.flac"
     path.touch()
-    tagger = _tagger(
-        monkeypatch, existing={"REPLAYGAIN_TRACK_GAIN": "-3.00 dB"}
-    )
+    tagger = _tagger(monkeypatch, existing={"REPLAYGAIN_TRACK_GAIN": "-3.00 dB"})
 
     result = tagger.write_replaygain(
         str(path), LoudnessInfo(track_gain_db=-6.0), mode="skip"
@@ -150,3 +141,61 @@ def test_read_existing_rg_finds_id3_txxx_frames(monkeypatch):
         "REPLAYGAIN_TRACK_GAIN": "-6.00 dB",
         "REPLAYGAIN_TRACK_PEAK": "0.987",
     }
+
+
+def test_read_existing_rg_finds_mp4_freeform_atoms(monkeypatch):
+    """MP4/M4A has no ReplayGain atom, so it's stored as a freeform
+    "----:mean:name" atom whose value is bytes, not str -- and other
+    taggers (e.g. mp4gain) write the name in lowercase. Both must be
+    recognized or a "fix"/"skip" rerun never sees its own (or a third
+    party's) previously-written tags."""
+
+    class FakeAudio:
+        tags = {
+            "----:com.apple.iTunes:REPLAYGAIN_TRACK_GAIN": [MP4FreeForm(b"-6.00 dB")],
+            "----:com.apple.iTunes:replaygain_track_peak": [MP4FreeForm(b"0.987")],
+        }
+
+    monkeypatch.setattr(
+        "app.services.tagger.MutagenFile", lambda path, easy=False: FakeAudio()
+    )
+
+    existing = TaggerService().read_existing_rg("track.m4a")
+
+    assert existing == {
+        "REPLAYGAIN_TRACK_GAIN": "-6.00 dB",
+        "REPLAYGAIN_TRACK_PEAK": "0.987",
+    }
+
+
+def test_write_mp4_stores_freeform_atoms(monkeypatch):
+    class FakeMP4(dict):
+        def __init__(self, path):
+            super().__init__()
+            self.saved = False
+
+        def save(self):
+            self.saved = True
+
+    instances: list[FakeMP4] = []
+
+    def fake_mp4_ctor(path):
+        instance = FakeMP4(path)
+        instances.append(instance)
+        return instance
+
+    monkeypatch.setattr("app.services.tagger.MP4", fake_mp4_ctor)
+
+    TaggerService()._write_mp4(
+        "track.m4a",
+        {"REPLAYGAIN_TRACK_GAIN": "-6.00 dB", "REPLAYGAIN_TRACK_PEAK": "0.987000"},
+    )
+
+    audio = instances[0]
+    assert audio.saved is True
+    assert bytes(audio["----:com.apple.iTunes:REPLAYGAIN_TRACK_GAIN"][0]) == (
+        b"-6.00 dB"
+    )
+    assert bytes(audio["----:com.apple.iTunes:REPLAYGAIN_TRACK_PEAK"][0]) == (
+        b"0.987000"
+    )
