@@ -41,7 +41,7 @@ def test_set_schedule_rejects_invalid_cron(manager):
     manager, session, _ = manager
     _add_source(session)
     with pytest.raises(ValueError):
-        manager.set_schedule(session, "lib", "not a cron", True)
+        manager.set_schedule(session, "lib", "not a cron")
 
 
 @pytest.mark.parametrize("cron_expr", ["* * * * *", "0 0 * * *"])
@@ -49,10 +49,9 @@ def test_set_schedule_computes_next_run(manager, cron_expr):
     manager, session, _ = manager
     _add_source(session)
     before = datetime.now(timezone.utc)
-    source = manager.set_schedule(session, "lib", cron_expr, True)
+    source = manager.set_schedule(session, "lib", cron_expr)
     expected = croniter(cron_expr, before).get_next(datetime)
     assert source.schedule_cron == cron_expr
-    assert source.schedule_enabled is True
     assert source.next_run_at is not None
     assert abs((_naive(source.next_run_at) - _naive(expected)).total_seconds()) < 2
 
@@ -60,10 +59,9 @@ def test_set_schedule_computes_next_run(manager, cron_expr):
 def test_clear_schedule(manager):
     manager, session, _ = manager
     _add_source(session)
-    manager.set_schedule(session, "lib", "* * * * *", True)
+    manager.set_schedule(session, "lib", "* * * * *")
     source = manager.clear_schedule(session, "lib")
     assert source.schedule_cron is None
-    assert source.schedule_enabled is False
     assert source.next_run_at is None
 
 
@@ -74,7 +72,6 @@ def test_run_due_schedules_creates_one_job_and_guards_overlap(manager):
         session,
         name="due",
         schedule_cron="* * * * *",
-        schedule_enabled=True,
         next_run_at=due_at,
     )
 
@@ -103,3 +100,23 @@ def test_run_due_schedules_creates_one_job_and_guards_overlap(manager):
     with Session(engine) as check_session:
         jobs = check_session.exec(select(Job).where(Job.source_name == "due")).all()
         assert len(jobs) == 1
+
+
+def test_run_due_schedules_skips_disabled_source(manager):
+    manager, session, engine = manager
+    due_at = datetime.now(timezone.utc) - timedelta(minutes=1)
+    _add_source(
+        session,
+        name="disabled",
+        enabled=False,
+        schedule_cron="* * * * *",
+        next_run_at=due_at,
+    )
+
+    manager.run_due_schedules()
+
+    with Session(engine) as check_session:
+        jobs = check_session.exec(
+            select(Job).where(Job.source_name == "disabled")
+        ).all()
+        assert len(jobs) == 0

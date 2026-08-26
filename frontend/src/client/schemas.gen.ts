@@ -297,11 +297,6 @@ export const ScheduleUpdateSchema = {
         schedule_cron: {
             type: 'string',
             title: 'Schedule Cron'
-        },
-        schedule_enabled: {
-            type: 'boolean',
-            title: 'Schedule Enabled',
-            default: true
         }
     },
     type: 'object',
@@ -364,11 +359,6 @@ export const SourceCreateSchema = {
                 }
             ],
             title: 'Schedule Cron'
-        },
-        schedule_enabled: {
-            type: 'boolean',
-            title: 'Schedule Enabled',
-            default: false
         },
         path_mappings: {
             items: {
@@ -439,11 +429,6 @@ export const SourcePublicSchema = {
                 }
             ],
             title: 'Schedule Cron'
-        },
-        schedule_enabled: {
-            type: 'boolean',
-            title: 'Schedule Enabled',
-            default: false
         },
         id: {
             type: 'integer',

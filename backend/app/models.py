@@ -19,9 +19,8 @@ class SourceBase(SQLModel):
     # None syncs every music library on the server; set to scope this
     # source to a single library.
     library_id: str | None = None
-    # cron schedule
+    # cron schedule; unset means no schedule is active
     schedule_cron: str | None = None
-    schedule_enabled: bool = False
 
 
 class Source(SourceBase, table=True):
@@ -73,7 +72,6 @@ class PathMappingPublic(PathMappingBase):
 
 class ScheduleUpdate(SQLModel):
     schedule_cron: str
-    schedule_enabled: bool = True
 
 
 class SourceTestRequest(SQLModel):

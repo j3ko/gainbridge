@@ -7,7 +7,6 @@ import { z } from "zod"
 
 import { type SourcePublic, SourcesService } from "@/client"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogClose,
@@ -31,15 +30,9 @@ import { LoadingButton } from "@/components/ui/loading-button"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
-const formSchema = z
-  .object({
-    schedule_enabled: z.boolean(),
-    schedule_cron: z.string().optional(),
-  })
-  .refine((data) => !data.schedule_enabled || !!data.schedule_cron?.trim(), {
-    message: "Cron expression is required when scheduling is enabled",
-    path: ["schedule_cron"],
-  })
+const formSchema = z.object({
+  schedule_cron: z.string().optional(),
+})
 
 type FormData = z.infer<typeof formSchema>
 
@@ -58,22 +51,20 @@ const ScheduleSource = ({ source, onSuccess }: ScheduleSourceProps) => {
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
-      schedule_enabled: source.schedule_enabled ?? false,
       schedule_cron: source.schedule_cron ?? "",
     },
   })
 
   const mutation = useMutation({
-    mutationFn: (data: FormData) =>
-      data.schedule_enabled
+    mutationFn: (data: FormData) => {
+      const cron = data.schedule_cron?.trim()
+      return cron
         ? SourcesService.setSchedule({
             name: source.name,
-            requestBody: {
-              schedule_cron: data.schedule_cron!.trim(),
-              schedule_enabled: true,
-            },
+            requestBody: { schedule_cron: cron },
           })
-        : SourcesService.clearSchedule({ name: source.name }),
+        : SourcesService.clearSchedule({ name: source.name })
+    },
     onSuccess: () => {
       showSuccessToast("Schedule updated")
       setIsOpen(false)
@@ -111,22 +102,6 @@ const ScheduleSource = ({ source, onSuccess }: ScheduleSourceProps) => {
             <div className="grid gap-4 py-4">
               <FormField
                 control={form.control}
-                name="schedule_enabled"
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormLabel className="font-normal">Enabled</FormLabel>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="schedule_cron"
                 render={({ field }) => (
                   <FormItem>
@@ -135,7 +110,8 @@ const ScheduleSource = ({ source, onSuccess }: ScheduleSourceProps) => {
                       <Input placeholder="0 */6 * * *" type="text" {...field} />
                     </FormControl>
                     <p className="text-sm text-muted-foreground">
-                      e.g. <code>0 */6 * * *</code> = every 6 hours
+                      e.g. <code>0 */6 * * *</code> = every 6 hours. Leave blank
+                      to turn off the schedule.
                     </p>
                     <FormMessage />
                   </FormItem>

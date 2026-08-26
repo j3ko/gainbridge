@@ -112,17 +112,14 @@ class JobManager:
         session.commit()
         return True
 
-    def set_schedule(
-        self, session: Session, name: str, cron_expr: str, enabled: bool
-    ) -> Source:
+    def set_schedule(self, session: Session, name: str, cron_expr: str) -> Source:
         source = self.get_source(session, name)
         if not source:
             raise KeyError(name)
         if not croniter.is_valid(cron_expr):
             raise ValueError(f"Invalid cron expression: {cron_expr}")
         source.schedule_cron = cron_expr
-        source.schedule_enabled = enabled
-        source.next_run_at = _compute_next_run(cron_expr) if enabled else None
+        source.next_run_at = _compute_next_run(cron_expr)
         source.updated_at = _utcnow()
         session.add(source)
         session.commit()
@@ -134,7 +131,6 @@ class JobManager:
         if not source:
             raise KeyError(name)
         source.schedule_cron = None
-        source.schedule_enabled = False
         source.next_run_at = None
         source.updated_at = _utcnow()
         session.add(source)
@@ -264,7 +260,8 @@ class JobManager:
         with Session(engine) as session:
             due = session.exec(
                 select(Source).where(
-                    Source.schedule_enabled == True,  # noqa: E712
+                    Source.enabled == True,  # noqa: E712
+                    col(Source.schedule_cron).is_not(None),
                     col(Source.next_run_at) <= now,
                 )
             ).all()

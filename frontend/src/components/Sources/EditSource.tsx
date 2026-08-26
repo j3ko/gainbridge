@@ -423,7 +423,9 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
                   Add Mapping
                 </Button>
               </div>
+            </div>
 
+            <DialogFooter className="shrink-0 flex-row items-center justify-between border-t bg-background px-6 py-4 sm:justify-between">
               <FormField
                 control={form.control}
                 name="enabled"
@@ -439,17 +441,16 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
                   </FormItem>
                 )}
               />
-            </div>
-
-            <DialogFooter className="shrink-0 border-t bg-background px-6 py-4">
-              <DialogClose asChild>
-                <Button variant="outline" disabled={mutation.isPending}>
-                  Cancel
-                </Button>
-              </DialogClose>
-              <LoadingButton type="submit" loading={mutation.isPending}>
-                Save
-              </LoadingButton>
+              <div className="flex items-center gap-2">
+                <DialogClose asChild>
+                  <Button variant="outline" disabled={mutation.isPending}>
+                    Cancel
+                  </Button>
+                </DialogClose>
+                <LoadingButton type="submit" loading={mutation.isPending}>
+                  Save
+                </LoadingButton>
+              </div>
             </DialogFooter>
           </form>
         </Form>

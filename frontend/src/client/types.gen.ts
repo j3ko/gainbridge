@@ -78,7 +78,6 @@ export type PlexServerOption = {
 
 export type ScheduleUpdate = {
     schedule_cron: string;
-    schedule_enabled?: boolean;
 };
 
 export type SourceCreate = {
@@ -90,7 +89,6 @@ export type SourceCreate = {
     user_id?: (string | null);
     library_id?: (string | null);
     schedule_cron?: (string | null);
-    schedule_enabled?: boolean;
     path_mappings?: Array<PathMappingCreate>;
 };
 
@@ -103,7 +101,6 @@ export type SourcePublic = {
     user_id?: (string | null);
     library_id?: (string | null);
     schedule_cron?: (string | null);
-    schedule_enabled?: boolean;
     id: number;
     created_at: string;
     next_run_at?: (string | null);

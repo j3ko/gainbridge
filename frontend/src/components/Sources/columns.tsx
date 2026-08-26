@@ -29,11 +29,21 @@ export const columns: ColumnDef<SourcePublic>[] = [
     },
   },
   {
+    accessorKey: "enabled",
+    header: "Enabled",
+    cell: ({ row }) =>
+      row.original.enabled ? (
+        <Badge variant="secondary">Enabled</Badge>
+      ) : (
+        <Badge variant="outline">Disabled</Badge>
+      ),
+  },
+  {
     accessorKey: "schedule_cron",
     header: "Schedule",
     cell: ({ row }) => {
-      const { schedule_enabled, schedule_cron, next_run_at } = row.original
-      if (!schedule_enabled || !schedule_cron) {
+      const { schedule_cron, next_run_at } = row.original
+      if (!schedule_cron) {
         return <Badge variant="outline">Off</Badge>
       }
       return (
