@@ -17,3 +17,5 @@ node_modules/
 *.sqlite3
 gainbridge.db
 *.log
+
+.claude/settings.local.json
