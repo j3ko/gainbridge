@@ -17,6 +17,11 @@
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	"forwardPorts": [8000, 5173],
 
+	// Bind-mount the host's ~/.claude so Claude Code's config/auth/memory survive container rebuilds.
+	"mounts": [
+		"source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached"
+	],
+
 	// Install Playwright's Chromium build + its system deps once at container creation,
 	// so browser-driven checks (e.g. Playwright tests, or an agent verifying the UI) don't
 	// need to install anything on demand.
