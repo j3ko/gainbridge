@@ -15,9 +15,7 @@ from app.models import (
 )
 from app.schemas.gain import LibraryInfo
 from app.services import plex_oauth
-from app.services.jellyfin import JellyfinService
 from app.services.jobs import job_manager
-from app.services.plex import PlexService
 
 router = APIRouter(prefix="/sources", tags=["sources"])
 
@@ -82,6 +80,16 @@ def test_connection(body: SourceTestRequest) -> dict[str, Any]:
         raise HTTPException(400, str(e))
 
 
+@router.post("/libraries", response_model=list[LibraryInfo])
+def list_libraries_for_connection(body: SourceTestRequest) -> list[LibraryInfo]:
+    try:
+        return job_manager.get_libraries(
+            body.type, body.base_url, body.token, body.user_id
+        )
+    except Exception as e:
+        raise HTTPException(400, str(e))
+
+
 @router.post("/plex/oauth/pin", response_model=PlexPinCreate)
 def create_plex_pin() -> dict[str, Any]:
     return plex_oauth.create_pin()
@@ -108,10 +116,4 @@ def list_libraries(session: SessionDep, name: str) -> list[LibraryInfo]:
     cfg = job_manager.get_source(session, name)
     if not cfg:
         raise HTTPException(404, "Source not found")
-    if cfg.type == "plex":
-        return PlexService(cfg.base_url, cfg.token).get_music_libraries()
-    svc = JellyfinService(cfg.base_url, cfg.token, user_id=cfg.user_id)
-    try:
-        return svc.get_music_libraries()
-    finally:
-        svc.close()
+    return job_manager.get_libraries(cfg.type, cfg.base_url, cfg.token, cfg.user_id)

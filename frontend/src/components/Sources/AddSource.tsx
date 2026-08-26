@@ -5,7 +5,7 @@ import { useState } from "react"
 import { useFieldArray, useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { type SourceCreate, SourcesService } from "@/client"
+import { type LibraryInfo, type SourceCreate, SourcesService } from "@/client"
 import PlexSignIn from "@/components/Sources/PlexSignIn"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -45,12 +45,15 @@ const pathMappingSchema = z.object({
   local_path: z.string().min(1, { message: "Required" }),
 })
 
+const ALL_LIBRARIES = "__all__"
+
 const formSchema = z.object({
   name: z.string().min(1, { message: "Name is required" }),
   type: z.enum(["plex", "jellyfin"]),
   base_url: z.string().min(1, { message: "Server URL is required" }),
   token: z.string().min(1, { message: "Token is required" }),
   user_id: z.string().optional(),
+  library_id: z.string().nullable(),
   enabled: z.boolean(),
   path_mappings: z.array(pathMappingSchema),
 })
@@ -59,6 +62,7 @@ type FormData = z.infer<typeof formSchema>
 
 const AddSource = () => {
   const [isOpen, setIsOpen] = useState(false)
+  const [libraries, setLibraries] = useState<LibraryInfo[]>([])
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
@@ -72,6 +76,7 @@ const AddSource = () => {
       base_url: "",
       token: "",
       user_id: "",
+      library_id: null,
       enabled: true,
       path_mappings: [],
     },
@@ -89,6 +94,7 @@ const AddSource = () => {
     onSuccess: () => {
       showSuccessToast("Source added successfully")
       form.reset()
+      setLibraries([])
       setIsOpen(false)
     },
     onError: handleError.bind(showErrorToast),
@@ -105,22 +111,29 @@ const AddSource = () => {
   }
 
   const testMutation = useMutation({
-    mutationFn: () =>
-      SourcesService.testConnection({
-        requestBody: {
-          type: form.getValues("type"),
-          base_url: form.getValues("base_url"),
-          token: form.getValues("token"),
-          user_id: form.getValues("user_id") || null,
-        },
-      }),
-    onSuccess: (result: Record<string, unknown>) => {
+    mutationFn: async () => {
+      const connectionInfo = {
+        type: form.getValues("type"),
+        base_url: form.getValues("base_url"),
+        token: form.getValues("token"),
+        user_id: form.getValues("user_id") || null,
+      }
+      const result = await SourcesService.testConnection({
+        requestBody: connectionInfo,
+      })
+      const libs = await SourcesService.listLibrariesForConnection({
+        requestBody: connectionInfo,
+      }).catch(() => [])
+      return { result, libs }
+    },
+    onSuccess: ({ result, libs }) => {
       const serverName = result.server_name as string | undefined
       const version = result.version as string | undefined
       const label = [serverName, version].filter(Boolean).join(" · ")
       showSuccessToast(
         label ? `Connected to ${label}` : "Connection successful",
       )
+      setLibraries(libs)
     },
     onError: handleError.bind(showErrorToast),
   })
@@ -264,6 +277,44 @@ const AddSource = () => {
               >
                 Test Connection
               </LoadingButton>
+
+              <FormField
+                control={form.control}
+                name="library_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Library</FormLabel>
+                    <Select
+                      onValueChange={(value) =>
+                        field.onChange(value === ALL_LIBRARIES ? null : value)
+                      }
+                      value={field.value ?? ALL_LIBRARIES}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value={ALL_LIBRARIES}>
+                          All music libraries
+                        </SelectItem>
+                        {libraries.map((library) => (
+                          <SelectItem key={library.id} value={library.id}>
+                            {library.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      {libraries.length > 0
+                        ? "Scope this source to one library, or sync every music library on the server."
+                        : 'Test the connection to pick a specific library. Leave as "All" to sync every music library on this server.'}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {sourceType === "jellyfin" && (
                 <FormField

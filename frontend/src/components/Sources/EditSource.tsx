@@ -1,11 +1,16 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Pencil, Plus, Trash2 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useFieldArray, useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { type SourceCreate, type SourcePublic, SourcesService } from "@/client"
+import {
+  type LibraryInfo,
+  type SourceCreate,
+  type SourcePublic,
+  SourcesService,
+} from "@/client"
 import PlexSignIn from "@/components/Sources/PlexSignIn"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -45,11 +50,14 @@ const pathMappingSchema = z.object({
   local_path: z.string().min(1, { message: "Required" }),
 })
 
+const ALL_LIBRARIES = "__all__"
+
 const formSchema = z.object({
   type: z.enum(["plex", "jellyfin"]),
   base_url: z.string().min(1, { message: "Server URL is required" }),
   token: z.string().min(1, { message: "Token is required" }),
   user_id: z.string().optional(),
+  library_id: z.string().nullable(),
   enabled: z.boolean(),
   path_mappings: z.array(pathMappingSchema),
 })
@@ -66,6 +74,7 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
   const [plexSummary, setPlexSummary] = useState<string | null>(
     source.type === "plex" ? source.base_url : null,
   )
+  const [libraries, setLibraries] = useState<LibraryInfo[]>([])
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
@@ -78,6 +87,7 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
       base_url: source.base_url,
       token: source.token,
       user_id: source.user_id ?? "",
+      library_id: source.library_id ?? null,
       enabled: source.enabled,
       path_mappings: (source.path_mappings ?? []).map((m) => ({
         remote_path: m.remote_path,
@@ -85,6 +95,13 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
       })),
     },
   })
+
+  useEffect(() => {
+    if (!isOpen) return
+    SourcesService.listLibraries({ name: source.name })
+      .then(setLibraries)
+      .catch(() => setLibraries([]))
+  }, [isOpen, source.name])
 
   const sourceType = form.watch("type")
   const pathMappings = useFieldArray({
@@ -115,22 +132,29 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
   }
 
   const testMutation = useMutation({
-    mutationFn: () =>
-      SourcesService.testConnection({
-        requestBody: {
-          type: form.getValues("type"),
-          base_url: form.getValues("base_url"),
-          token: form.getValues("token"),
-          user_id: form.getValues("user_id") || null,
-        },
-      }),
-    onSuccess: (result: Record<string, unknown>) => {
+    mutationFn: async () => {
+      const connectionInfo = {
+        type: form.getValues("type"),
+        base_url: form.getValues("base_url"),
+        token: form.getValues("token"),
+        user_id: form.getValues("user_id") || null,
+      }
+      const result = await SourcesService.testConnection({
+        requestBody: connectionInfo,
+      })
+      const libs = await SourcesService.listLibrariesForConnection({
+        requestBody: connectionInfo,
+      }).catch(() => [])
+      return { result, libs }
+    },
+    onSuccess: ({ result, libs }) => {
       const serverName = result.server_name as string | undefined
       const version = result.version as string | undefined
       const label = [serverName, version].filter(Boolean).join(" · ")
       showSuccessToast(
         label ? `Connected to ${label}` : "Connection successful",
       )
+      setLibraries(libs)
     },
     onError: handleError.bind(showErrorToast),
   })
@@ -257,6 +281,43 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
               >
                 Test Connection
               </LoadingButton>
+
+              <FormField
+                control={form.control}
+                name="library_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Library</FormLabel>
+                    <Select
+                      onValueChange={(value) =>
+                        field.onChange(value === ALL_LIBRARIES ? null : value)
+                      }
+                      value={field.value ?? ALL_LIBRARIES}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value={ALL_LIBRARIES}>
+                          All music libraries
+                        </SelectItem>
+                        {libraries.map((library) => (
+                          <SelectItem key={library.id} value={library.id}>
+                            {library.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Scope this source to one library, or sync every music
+                      library on the server.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {sourceType === "jellyfin" && (
                 <FormField

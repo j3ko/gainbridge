@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { JobsCreateJobData, JobsCreateJobResponse, JobsListJobsData, JobsListJobsResponse, JobsGetJobsLogData, JobsGetJobsLogResponse, JobsGetJobData, JobsGetJobResponse, JobsCancelJobData, JobsCancelJobResponse, SourcesListSourcesResponse, SourcesAddSourceData, SourcesAddSourceResponse, SourcesDeleteSourceData, SourcesDeleteSourceResponse, SourcesSetScheduleData, SourcesSetScheduleResponse, SourcesClearScheduleData, SourcesClearScheduleResponse, SourcesTestSourceData, SourcesTestSourceResponse, SourcesTestConnectionData, SourcesTestConnectionResponse, SourcesCreatePlexPinResponse, SourcesCheckPlexPinData, SourcesCheckPlexPinResponse, SourcesListPlexServersData, SourcesListPlexServersResponse, SourcesListLibrariesData, SourcesListLibrariesResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { JobsCreateJobData, JobsCreateJobResponse, JobsListJobsData, JobsListJobsResponse, JobsGetJobsLogData, JobsGetJobsLogResponse, JobsGetJobData, JobsGetJobResponse, JobsCancelJobData, JobsCancelJobResponse, SourcesListSourcesResponse, SourcesAddSourceData, SourcesAddSourceResponse, SourcesDeleteSourceData, SourcesDeleteSourceResponse, SourcesSetScheduleData, SourcesSetScheduleResponse, SourcesClearScheduleData, SourcesClearScheduleResponse, SourcesTestSourceData, SourcesTestSourceResponse, SourcesTestConnectionData, SourcesTestConnectionResponse, SourcesListLibrariesForConnectionData, SourcesListLibrariesForConnectionResponse, SourcesCreatePlexPinResponse, SourcesCheckPlexPinData, SourcesCheckPlexPinResponse, SourcesListPlexServersData, SourcesListPlexServersResponse, SourcesListLibrariesData, SourcesListLibrariesResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class JobsService {
     /**
@@ -234,6 +234,25 @@ export class SourcesService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/v1/sources/test',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List Libraries For Connection
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns LibraryInfo Successful Response
+     * @throws ApiError
+     */
+    public static listLibrariesForConnection(data: SourcesListLibrariesForConnectionData): CancelablePromise<SourcesListLibrariesForConnectionResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/sources/libraries',
             body: data.requestBody,
             mediaType: 'application/json',
             errors: {

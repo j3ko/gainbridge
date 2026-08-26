@@ -15,7 +15,7 @@ from sqlmodel import Session, col, func, select
 from app.core.config import settings
 from app.core.db import engine
 from app.models import Job, JobCreate, PathMapping, Source, SourceCreate
-from app.schemas.gain import TrackInfo
+from app.schemas.gain import LibraryInfo, TrackInfo
 from app.services.jellyfin import JellyfinService
 from app.services.plex import PlexService
 from app.services.tagger import TaggerService, WriteMode
@@ -159,12 +159,27 @@ class JobManager:
         finally:
             svc.close()
 
+    def get_libraries(
+        self, type: str, base_url: str, token: str, user_id: str | None = None
+    ) -> list[LibraryInfo]:
+        if type == "plex":
+            return PlexService(base_url, token).get_music_libraries()
+        svc = JellyfinService(base_url, token, user_id=user_id)
+        try:
+            return svc.get_music_libraries()
+        finally:
+            svc.close()
+
     # ----- jobs -----
     def create_job(
         self, session: Session, body: JobCreate, skip_if_running: bool = False
     ) -> Job | None:
-        if not self.get_source(session, body.source_name):
+        source = self.get_source(session, body.source_name)
+        if not source:
             raise ValueError(f"Unknown source: {body.source_name}")
+        library_id = (
+            body.library_id if body.library_id is not None else source.library_id
+        )
 
         if skip_if_running:
             existing = session.exec(
@@ -181,7 +196,7 @@ class JobManager:
         job = Job(
             id=job_id,
             source_name=body.source_name,
-            library_id=body.library_id,
+            library_id=library_id,
             dry_run=body.dry_run,
             write_mode=body.write_mode,
             status="pending",

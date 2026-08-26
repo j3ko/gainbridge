@@ -88,6 +88,7 @@ export type SourceCreate = {
     token: string;
     enabled?: boolean;
     user_id?: (string | null);
+    library_id?: (string | null);
     schedule_cron?: (string | null);
     schedule_enabled?: boolean;
     path_mappings?: Array<PathMappingCreate>;
@@ -100,6 +101,7 @@ export type SourcePublic = {
     token: string;
     enabled?: boolean;
     user_id?: (string | null);
+    library_id?: (string | null);
     schedule_cron?: (string | null);
     schedule_enabled?: boolean;
     id: number;
@@ -197,6 +199,12 @@ export type SourcesTestConnectionData = {
 export type SourcesTestConnectionResponse = ({
     [key: string]: unknown;
 });
+
+export type SourcesListLibrariesForConnectionData = {
+    requestBody: SourceTestRequest;
+};
+
+export type SourcesListLibrariesForConnectionResponse = (Array<LibraryInfo>);
 
 export type SourcesCreatePlexPinResponse = (PlexPinCreate);
 

@@ -343,6 +343,17 @@ export const SourceCreateSchema = {
             ],
             title: 'User Id'
         },
+        library_id: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Library Id'
+        },
         schedule_cron: {
             anyOf: [
                 {
@@ -406,6 +417,17 @@ export const SourcePublicSchema = {
                 }
             ],
             title: 'User Id'
+        },
+        library_id: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Library Id'
         },
         schedule_cron: {
             anyOf: [
