@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { ArrowDownToLine } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import { JobsService } from "@/client"
 import { Label } from "@/components/ui/label"
@@ -31,8 +31,33 @@ export const Route = createFileRoute("/_layout/logs")({
 
 const ALL_JOBS = "all"
 
+// Matches the "<date> <time> LEVEL logger.name: message" format from
+// logging_config.py, e.g. "2026-08-26 03:17:15,150 WARNING app.services.jobs: ...".
+const LOG_LEVEL_PATTERN = /^\S+ \S+ (\w+) /
+const WARN_OR_ABOVE = new Set(["WARNING", "ERROR", "CRITICAL"])
+
+const ALL_LEVELS = "all"
+const WARNINGS_AND_ERRORS = "warnings"
+
+// A continuation line (e.g. a traceback) has no level prefix of its own --
+// it inherits whatever level the line above it carried.
+function filterToWarningsAndErrors(log: string): string {
+  let currentLevelMatches = true
+  return log
+    .split("\n")
+    .filter((line) => {
+      const match = line.match(LOG_LEVEL_PATTERN)
+      if (match) {
+        currentLevelMatches = WARN_OR_ABOVE.has(match[1])
+      }
+      return currentLevelMatches
+    })
+    .join("\n")
+}
+
 function LogViewer() {
   const [selectedJobId, setSelectedJobId] = useState(ALL_JOBS)
+  const [levelFilter, setLevelFilter] = useState(ALL_LEVELS)
   const [autoScroll, setAutoScroll] = useState(true)
   const [displayedLog, setDisplayedLog] = useState("")
   const scrollRef = useRef<HTMLPreElement>(null)
@@ -87,12 +112,20 @@ function LogViewer() {
     }
   }, [jobLog?.log, autoScroll, displayedLog])
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: displayedLog triggers a re-scroll on new content, though it isn't read in the body
+  const visibleLog = useMemo(
+    () =>
+      levelFilter === WARNINGS_AND_ERRORS
+        ? filterToWarningsAndErrors(displayedLog)
+        : displayedLog,
+    [displayedLog, levelFilter],
+  )
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: visibleLog triggers a re-scroll on new content, though it isn't read in the body
   useEffect(() => {
     if (autoScroll && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [displayedLog, autoScroll])
+  }, [visibleLog, autoScroll])
 
   const handleScroll = () => {
     const el = scrollRef.current
@@ -127,6 +160,17 @@ function LogViewer() {
             Auto-scroll
           </Label>
         </div>
+        <Select value={levelFilter} onValueChange={setLevelFilter}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_LEVELS}>All levels</SelectItem>
+            <SelectItem value={WARNINGS_AND_ERRORS}>
+              Warnings & errors only
+            </SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={selectedJobId} onValueChange={setSelectedJobId}>
           <SelectTrigger className="w-[280px]">
             <SelectValue placeholder="All jobs" />
@@ -146,7 +190,12 @@ function LogViewer() {
         onScroll={handleScroll}
         className="max-h-[500px] overflow-y-auto rounded-md border bg-muted/20 p-4 text-xs whitespace-pre-wrap break-words"
       >
-        {isPending ? "Loading..." : displayedLog || "No log entries yet."}
+        {isPending
+          ? "Loading..."
+          : visibleLog ||
+            (displayedLog
+              ? "No log entries match this filter."
+              : "No log entries yet.")}
       </pre>
     </div>
   )
