@@ -147,14 +147,6 @@ Set the `DOMAIN`, by default `localhost` (for development), but when deploying y
 export DOMAIN=gainbridge.example.com
 ```
 
-Set the `SECRET_KEY`, used to sign tokens:
-
-```bash
-export SECRET_KEY="changethis"
-```
-
-Note: you can use the Python command above to generate a secure secret key.
-
 Set the `FIRST_SUPERUSER_PASSWORD` to something different than `changethis`:
 
 ```bash
@@ -278,7 +270,7 @@ You can read more about it in the official guide: [Configuring the self-hosted r
 
 ### Set Secrets
 
-On your repository, configure secrets for the environment variables you need, the same ones described above, including `SECRET_KEY`, etc. Follow the [official GitHub guide for setting repository secrets](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository).
+On your repository, configure secrets for the environment variables you need, the same ones described above, including `FIRST_SUPERUSER_PASSWORD`, etc. Follow the [official GitHub guide for setting repository secrets](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository).
 
 The current Github Actions workflows expect these secrets:
 
@@ -290,7 +282,6 @@ The current Github Actions workflows expect these secrets:
 * `FIRST_SUPERUSER`
 * `FIRST_SUPERUSER_PASSWORD`
 * `POSTGRES_PASSWORD`
-* `SECRET_KEY`
 * `RELEASE_PLEASE_TOKEN`
 * `SMOKESHOW_AUTH_KEY`
 

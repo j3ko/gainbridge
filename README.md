@@ -62,15 +62,8 @@ From there, add a Plex or Jellyfin source with its server URL and an API token, 
 
 Configuration lives in the top-level `.env` file. At minimum, review:
 
-- `SECRET_KEY`
 - `SQLITE_DB_FILE` - path to the SQLite database file.
 - `BACKEND_CORS_ORIGINS` - required if the frontend is served from a different origin than the backend.
-
-Generate a secret key with:
-
-```bash
-python -c "import secrets; print(secrets.token_urlsafe(32))"
-```
 
 ## Documentation
 
