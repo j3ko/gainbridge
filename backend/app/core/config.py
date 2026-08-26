@@ -1,4 +1,5 @@
 import warnings
+from pathlib import Path
 from typing import Annotated, Any, Literal
 
 from pydantic import (
@@ -74,6 +75,12 @@ class Settings(BaseSettings):
     def _set_default_emails_from(self) -> Self:
         if not self.EMAILS_FROM_NAME:
             self.EMAILS_FROM_NAME = self.PROJECT_NAME
+        return self
+
+    @model_validator(mode="after")
+    def _ensure_data_dirs(self) -> Self:
+        Path(self.SQLITE_DB_FILE).parent.mkdir(parents=True, exist_ok=True)
+        Path(self.LOG_FILE).parent.mkdir(parents=True, exist_ok=True)
         return self
 
     @computed_field  # type: ignore[prop-decorator]

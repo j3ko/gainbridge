@@ -164,7 +164,7 @@ You can set several other environment variables:
 * `PROJECT_NAME`: The name of the project, used in the API docs title.
 * `STACK_NAME`: The name of the stack used for Docker Compose labels and project name, this should be different for `staging`, `production`, etc. You could use the same domain replacing dots with dashes, e.g. `gainbridge-example-com` and `staging-gainbridge-example-com`.
 * `BACKEND_CORS_ORIGINS`: A list of allowed CORS origins separated by commas.
-* `SQLITE_DB_FILE`: Path to the SQLite database file. Make sure this points somewhere persistent (a mounted volume) rather than ephemeral container storage.
+* `SQLITE_DB_FILE` / `LOG_FILE`: Paths to the SQLite database and log file. By default these live under the top-level `data/` folder, which `compose.yml` bind-mounts into the backend container so they persist across redeploys. The deploy workflows check out the repo with `clean: false` specifically so this untracked `data/` folder survives from one deploy to the next on the runner.
 * `SENTRY_DSN`: The DSN for Sentry, if you are using it.
 
 `FIRST_SUPERUSER` and `FIRST_SUPERUSER_PASSWORD` are still required by `compose.yml` even though Gainbridge has no login/auth of its own; set them to any values.
@@ -281,7 +281,6 @@ The current Github Actions workflows expect these secrets:
 * `EMAILS_FROM_EMAIL`
 * `FIRST_SUPERUSER`
 * `FIRST_SUPERUSER_PASSWORD`
-* `POSTGRES_PASSWORD`
 * `RELEASE_PLEASE_TOKEN`
 * `SMOKESHOW_AUTH_KEY`
 

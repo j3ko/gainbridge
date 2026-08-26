@@ -19,7 +19,11 @@ services:
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - EMAILS_FROM_EMAIL=${EMAILS_FROM_EMAIL}
       - SQLITE_DB_FILE=${SQLITE_DB_FILE}
+      - LOG_FILE=${LOG_FILE}
       - SENTRY_DSN=${SENTRY_DSN}
+
+    volumes:
+      - ./data:/app/backend/data
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
