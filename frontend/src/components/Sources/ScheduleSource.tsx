@@ -27,8 +27,24 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
+
+const CRON_PRESETS = [
+  { label: "Every hour", value: "0 * * * *" },
+  { label: "Every 6 hours", value: "0 */6 * * *" },
+  { label: "Every 12 hours", value: "0 */12 * * *" },
+  { label: "Daily at midnight", value: "0 0 * * *" },
+  { label: "Daily at 2 AM", value: "0 2 * * *" },
+  { label: "Weekly (Sunday midnight)", value: "0 0 * * 0" },
+]
 
 const formSchema = z.object({
   schedule_cron: z.string().optional(),
@@ -100,6 +116,31 @@ const ScheduleSource = ({ source, onSuccess }: ScheduleSourceProps) => {
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
+              <FormItem>
+                <FormLabel>Common Schedules</FormLabel>
+                <Select
+                  onValueChange={(value) =>
+                    form.setValue("schedule_cron", value, {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    })
+                  }
+                >
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Quick fill…" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {CRON_PRESETS.map((preset) => (
+                      <SelectItem key={preset.value} value={preset.value}>
+                        {preset.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormItem>
+
               <FormField
                 control={form.control}
                 name="schedule_cron"
