@@ -142,17 +142,17 @@ class JobManager:
         cfg = self.get_source(session, name)
         if not cfg:
             raise KeyError(name)
-        return self.test_connection(cfg.type, cfg.base_url, cfg.token, cfg.user_id)
+        return self.test_connection(cfg.type, cfg.base_url, cfg.token)
 
     def test_connection(
-        self, type: str, base_url: str, token: str, user_id: str | None = None
+        self, type: str, base_url: str, token: str
     ) -> dict[str, Any]:
         logger.info("testing %s connection: %s", type, base_url)
         try:
             if type == "plex":
                 result = PlexService(base_url, token).test_connection()
             else:
-                svc = JellyfinService(base_url, token, user_id=user_id)
+                svc = JellyfinService(base_url, token)
                 try:
                     result = svc.test_connection()
                 finally:
@@ -162,13 +162,11 @@ class JobManager:
             raise
         return result
 
-    def get_libraries(
-        self, type: str, base_url: str, token: str, user_id: str | None = None
-    ) -> list[LibraryInfo]:
+    def get_libraries(self, type: str, base_url: str, token: str) -> list[LibraryInfo]:
         try:
             if type == "plex":
                 return PlexService(base_url, token).get_music_libraries()
-            svc = JellyfinService(base_url, token, user_id=user_id)
+            svc = JellyfinService(base_url, token)
             try:
                 return svc.get_music_libraries()
             finally:
@@ -395,7 +393,6 @@ class JobManager:
                 source_type = cfg.type
                 base_url = cfg.base_url
                 token = cfg.token
-                user_id = cfg.user_id
                 path_mappings = [
                     (m.remote_path, m.local_path) for m in cfg.path_mappings
                 ]
@@ -421,7 +418,6 @@ class JobManager:
                     job_id,
                     base_url,
                     token,
-                    user_id,
                     library_id,
                     dry_run,
                     write_mode,
@@ -496,14 +492,13 @@ class JobManager:
         job_id: str,
         base_url: str,
         token: str,
-        user_id: str | None,
         library_id: str | None,
         dry_run: bool,
         write_mode: WriteMode,
         path_mappings: list[tuple[str, str]],
         cancel_event: threading.Event,
     ) -> None:
-        svc = JellyfinService(base_url, token, user_id=user_id)
+        svc = JellyfinService(base_url, token)
         try:
             try:
                 items = list(svc.iter_audio_items(library_id))

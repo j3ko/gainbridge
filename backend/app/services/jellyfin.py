@@ -12,10 +12,10 @@ logger = logging.getLogger(__name__)
 
 
 class JellyfinService:
-    def __init__(self, base_url: str, api_key: str, user_id: str | None = None):
+    def __init__(self, base_url: str, api_key: str):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
-        self.user_id = user_id
+        self._user_id: str | None = None
         logger.info("jellyfin: connecting to %s", self.base_url)
         self._client = httpx.Client(
             base_url=self.base_url,
@@ -45,18 +45,17 @@ class JellyfinService:
             raise
         return r.json()
 
-    def ensure_user_id(self) -> str:
-        if self.user_id:
-            return self.user_id
-        # Prefer the first admin / first user
-        users = self._get("/Users")
-        if not users:
-            raise RuntimeError("No Jellyfin users found")
-        self.user_id = users[0]["Id"]
-        return self.user_id
+    def _ensure_user_id(self) -> str:
+        if self._user_id is None:
+            # Prefer the first admin / first user
+            users = self._get("/Users")
+            if not users:
+                raise RuntimeError("No Jellyfin users found")
+            self._user_id = users[0]["Id"]
+        return self._user_id
 
     def get_music_libraries(self) -> list[LibraryInfo]:
-        uid = self.ensure_user_id()
+        uid = self._ensure_user_id()
         views = self._get(f"/Users/{uid}/Views")
         libs = []
         for item in views.get("Items", []):
@@ -68,7 +67,7 @@ class JellyfinService:
     def iter_audio_items(
         self, library_id: str | None = None
     ) -> Iterator[dict[str, Any]]:
-        uid = self.ensure_user_id()
+        uid = self._ensure_user_id()
         start = 0
         limit = 200
         while True:

@@ -27,10 +27,9 @@ class _FakePlexService:
 
 
 class _FakeJellyfinService:
-    def __init__(self, base_url, token, user_id=None):
+    def __init__(self, base_url, token):
         self.base_url = base_url
         self.token = token
-        self.user_id = user_id
         self.closed = False
 
     def test_connection(self):
@@ -50,14 +49,14 @@ def test_test_connection_dispatches_to_plex(monkeypatch):
 def test_test_connection_dispatches_to_jellyfin_and_closes(monkeypatch):
     services = []
 
-    def factory(base_url, token, user_id=None):
-        svc = _FakeJellyfinService(base_url, token, user_id)
+    def factory(base_url, token):
+        svc = _FakeJellyfinService(base_url, token)
         services.append(svc)
         return svc
 
     monkeypatch.setattr(jobs_module, "JellyfinService", factory)
     manager = JobManager()
-    result = manager.test_connection("jellyfin", "http://y", "k", "uid")
+    result = manager.test_connection("jellyfin", "http://y", "k")
     assert result == {"ok": True, "server_name": "My Jellyfin", "version": "2.0"}
     assert services[0].closed is True
 

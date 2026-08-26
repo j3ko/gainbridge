@@ -327,17 +327,6 @@ export const SourceCreateSchema = {
             title: 'Enabled',
             default: true
         },
-        user_id: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'User Id'
-        },
         library_id: {
             anyOf: [
                 {
@@ -396,17 +385,6 @@ export const SourcePublicSchema = {
             type: 'boolean',
             title: 'Enabled',
             default: true
-        },
-        user_id: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'User Id'
         },
         library_id: {
             anyOf: [
@@ -490,17 +468,6 @@ export const SourceTestRequestSchema = {
         token: {
             type: 'string',
             title: 'Token'
-        },
-        user_id: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'User Id'
         }
     },
     type: 'object',

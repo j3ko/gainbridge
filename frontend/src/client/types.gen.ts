@@ -86,7 +86,6 @@ export type SourceCreate = {
     base_url: string;
     token: string;
     enabled?: boolean;
-    user_id?: (string | null);
     library_id?: (string | null);
     schedule_cron?: (string | null);
     path_mappings?: Array<PathMappingCreate>;
@@ -98,7 +97,6 @@ export type SourcePublic = {
     base_url: string;
     token: string;
     enabled?: boolean;
-    user_id?: (string | null);
     library_id?: (string | null);
     schedule_cron?: (string | null);
     id: number;
@@ -112,7 +110,6 @@ export type SourceTestRequest = {
     type: string;
     base_url: string;
     token: string;
-    user_id?: (string | null);
 };
 
 export type ValidationError = {

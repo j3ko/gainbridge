@@ -56,7 +56,6 @@ const formSchema = z.object({
   type: z.enum(["plex", "jellyfin"]),
   base_url: z.string().min(1, { message: "Server URL is required" }),
   token: z.string().min(1, { message: "Token is required" }),
-  user_id: z.string().optional(),
   library_id: z.string().nullable(),
   enabled: z.boolean(),
   path_mappings: z.array(pathMappingSchema),
@@ -86,7 +85,6 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
       type: source.type as "plex" | "jellyfin",
       base_url: source.base_url,
       token: source.token,
-      user_id: source.user_id ?? "",
       library_id: source.library_id ?? null,
       enabled: source.enabled,
       path_mappings: (source.path_mappings ?? []).map((m) => ({
@@ -127,7 +125,6 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
     mutation.mutate({
       ...data,
       name: source.name,
-      user_id: data.user_id ? data.user_id : null,
     })
   }
 
@@ -137,7 +134,6 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
         type: form.getValues("type"),
         base_url: form.getValues("base_url"),
         token: form.getValues("token"),
-        user_id: form.getValues("user_id") || null,
       }
       const result = await SourcesService.testConnection({
         requestBody: connectionInfo,
@@ -160,7 +156,7 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
   })
 
   const handleTestConnection = async () => {
-    const valid = await form.trigger(["type", "base_url", "token", "user_id"])
+    const valid = await form.trigger(["type", "base_url", "token"])
     if (!valid) return
     testMutation.mutate()
   }
@@ -320,26 +316,6 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
                   </FormItem>
                 )}
               />
-
-              {sourceType === "jellyfin" && (
-                <FormField
-                  control={form.control}
-                  name="user_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>User ID</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Jellyfin user ID"
-                          type="text"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
 
               <div className="flex flex-col gap-2">
                 <FormLabel>Path Mappings</FormLabel>

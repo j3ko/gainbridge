@@ -52,7 +52,6 @@ const formSchema = z.object({
   type: z.enum(["plex", "jellyfin"]),
   base_url: z.string().min(1, { message: "Server URL is required" }),
   token: z.string().min(1, { message: "Token is required" }),
-  user_id: z.string().optional(),
   library_id: z.string().nullable(),
   enabled: z.boolean(),
   path_mappings: z.array(pathMappingSchema),
@@ -75,7 +74,6 @@ const AddSource = () => {
       type: "plex",
       base_url: "",
       token: "",
-      user_id: "",
       library_id: null,
       enabled: true,
       path_mappings: [],
@@ -104,10 +102,7 @@ const AddSource = () => {
   })
 
   const onSubmit = (data: FormData) => {
-    mutation.mutate({
-      ...data,
-      user_id: data.user_id ? data.user_id : null,
-    })
+    mutation.mutate(data)
   }
 
   const testMutation = useMutation({
@@ -116,7 +111,6 @@ const AddSource = () => {
         type: form.getValues("type"),
         base_url: form.getValues("base_url"),
         token: form.getValues("token"),
-        user_id: form.getValues("user_id") || null,
       }
       const result = await SourcesService.testConnection({
         requestBody: connectionInfo,
@@ -139,7 +133,7 @@ const AddSource = () => {
   })
 
   const handleTestConnection = async () => {
-    const valid = await form.trigger(["type", "base_url", "token", "user_id"])
+    const valid = await form.trigger(["type", "base_url", "token"])
     if (!valid) return
     testMutation.mutate()
   }
@@ -318,26 +312,6 @@ const AddSource = () => {
                   </FormItem>
                 )}
               />
-
-              {sourceType === "jellyfin" && (
-                <FormField
-                  control={form.control}
-                  name="user_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>User ID</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Jellyfin user ID"
-                          type="text"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
 
               <div className="flex flex-col gap-2">
                 <FormLabel>Path Mappings</FormLabel>

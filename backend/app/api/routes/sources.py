@@ -75,9 +75,7 @@ def test_source(session: SessionDep, name: str) -> dict[str, Any]:
 @router.post("/test")
 def test_connection(body: SourceTestRequest) -> dict[str, Any]:
     try:
-        return job_manager.test_connection(
-            body.type, body.base_url, body.token, body.user_id
-        )
+        return job_manager.test_connection(body.type, body.base_url, body.token)
     except Exception as e:
         raise HTTPException(400, str(e))
 
@@ -85,9 +83,7 @@ def test_connection(body: SourceTestRequest) -> dict[str, Any]:
 @router.post("/libraries", response_model=list[LibraryInfo])
 def list_libraries_for_connection(body: SourceTestRequest) -> list[LibraryInfo]:
     try:
-        return job_manager.get_libraries(
-            body.type, body.base_url, body.token, body.user_id
-        )
+        return job_manager.get_libraries(body.type, body.base_url, body.token)
     except Exception as e:
         raise HTTPException(400, str(e))
 
@@ -118,4 +114,4 @@ def list_libraries(session: SessionDep, name: str) -> list[LibraryInfo]:
     cfg = job_manager.get_source(session, name)
     if not cfg:
         raise HTTPException(404, "Source not found")
-    return job_manager.get_libraries(cfg.type, cfg.base_url, cfg.token, cfg.user_id)
+    return job_manager.get_libraries(cfg.type, cfg.base_url, cfg.token)

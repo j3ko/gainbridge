@@ -14,8 +14,6 @@ class SourceBase(SQLModel):
     base_url: str
     token: str
     enabled: bool = True
-    # jellyfin optional
-    user_id: str | None = None
     # None syncs every music library on the server; set to scope this
     # source to a single library.
     library_id: str | None = None
@@ -78,7 +76,6 @@ class SourceTestRequest(SQLModel):
     type: str
     base_url: str
     token: str
-    user_id: str | None = None
 
 
 class PlexPinCreate(SQLModel):
