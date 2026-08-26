@@ -8,11 +8,16 @@ router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 
 @router.post("/", response_model=JobPublic)
-def create_job(session: SessionDep, body: JobCreate) -> Job | None:
+def create_job(session: SessionDep, body: JobCreate) -> Job:
     try:
-        return job_manager.create_job(session, body)
+        job = job_manager.create_job(session, body, skip_if_running=True)
     except ValueError as e:
         raise HTTPException(400, str(e))
+    if job is None:
+        raise HTTPException(
+            409, f'A sync is already running for "{body.source_name}"'
+        )
+    return job
 
 
 @router.get("/", response_model=JobsPublic)
