@@ -174,16 +174,19 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
         <Pencil />
         Edit Source
       </DropdownMenuItem>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-y-hidden p-0 sm:max-w-md">
         <Form {...form}>
-          <form className="min-w-0" onSubmit={form.handleSubmit(onSubmit)}>
-            <DialogHeader>
+          <form
+            className="flex min-h-0 min-w-0 flex-1 flex-col"
+            onSubmit={form.handleSubmit(onSubmit)}
+          >
+            <DialogHeader className="shrink-0 border-b bg-background px-6 py-6">
               <DialogTitle>Edit Source</DialogTitle>
               <DialogDescription>
                 Update the connection details for "{source.name}".
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto px-6 py-4">
               <FormField
                 control={form.control}
                 name="type"
@@ -311,8 +314,7 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Scope this source to one library, or sync every music
-                      library on the server.
+                      Scope this source to one library, or sync every library.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -340,14 +342,7 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
               )}
 
               <div className="flex flex-col gap-2">
-                <div>
-                  <FormLabel>Path Mappings</FormLabel>
-                  <FormDescription>
-                    If this library spans multiple folders, or this machine
-                    mounts it at a different path than your Plex/Jellyfin server
-                    does, add a mapping for each folder.
-                  </FormDescription>
-                </div>
+                <FormLabel>Path Mappings</FormLabel>
 
                 {pathMappings.fields.map((field, index) => (
                   <div
@@ -446,7 +441,7 @@ const EditSource = ({ source, onSuccess }: EditSourceProps) => {
               />
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="shrink-0 border-t bg-background px-6 py-4">
               <DialogClose asChild>
                 <Button variant="outline" disabled={mutation.isPending}>
                   Cancel

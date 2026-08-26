@@ -152,16 +152,19 @@ const AddSource = () => {
           Add Source
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-y-hidden p-0 sm:max-w-md">
+        <DialogHeader className="shrink-0 border-b bg-background px-6 py-6">
           <DialogTitle>Add Source</DialogTitle>
           <DialogDescription>
             Connect a Plex or Jellyfin server to sync ReplayGain tags from.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form className="min-w-0" onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="grid gap-4 py-4">
+          <form
+            className="flex min-h-0 min-w-0 flex-1 flex-col"
+            onSubmit={form.handleSubmit(onSubmit)}
+          >
+            <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto px-6 py-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -308,8 +311,8 @@ const AddSource = () => {
                     </Select>
                     <FormDescription>
                       {libraries.length > 0
-                        ? "Scope this source to one library, or sync every music library on the server."
-                        : 'Test the connection to pick a specific library. Leave as "All" to sync every music library on this server.'}
+                        ? "Scope this source to one library, or sync every library."
+                        : "Test the connection to choose a specific library."}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -337,14 +340,7 @@ const AddSource = () => {
               )}
 
               <div className="flex flex-col gap-2">
-                <div>
-                  <FormLabel>Path Mappings</FormLabel>
-                  <FormDescription>
-                    If this library spans multiple folders, or this machine
-                    mounts it at a different path than your Plex/Jellyfin server
-                    does, add a mapping for each folder.
-                  </FormDescription>
-                </div>
+                <FormLabel>Path Mappings</FormLabel>
 
                 {pathMappings.fields.map((field, index) => (
                   <div
@@ -443,7 +439,7 @@ const AddSource = () => {
               />
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="shrink-0 border-t bg-background px-6 py-4">
               <DialogClose asChild>
                 <Button variant="outline" disabled={mutation.isPending}>
                   Cancel
