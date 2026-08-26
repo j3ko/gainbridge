@@ -1,4 +1,4 @@
-# FastAPI Project - Deployment
+# Gainbridge - Deployment
 
 You can deploy the project using Docker Compose to a remote server.
 
@@ -12,7 +12,7 @@ But you have to configure a couple things first. 🤓
 
 * Have a remote server ready and available.
 * Configure the DNS records of your domain to point to the IP of the server you just created.
-* Configure a wildcard subdomain for your domain, so that you can have multiple subdomains for different services, e.g. `*.fastapi-project.example.com`. This will be useful for accessing different components, like `dashboard.fastapi-project.example.com`, `api.fastapi-project.example.com`, `traefik.fastapi-project.example.com`, `adminer.fastapi-project.example.com`, etc. And also for `staging`, like `dashboard.staging.fastapi-project.example.com`, `adminer.staging.fastapi-project.example.com`, etc.
+* Configure a wildcard subdomain for your domain, so that you can have multiple subdomains for different services, e.g. `*.gainbridge.example.com`. This will be useful for accessing different components, like `dashboard.gainbridge.example.com`, `api.gainbridge.example.com`, `traefik.gainbridge.example.com`, etc. And also for `staging`, like `dashboard.staging.gainbridge.example.com`, etc.
 * Install and configure [Docker](https://docs.docker.com/engine/install/) on the remote server (Docker Engine, not Docker Desktop).
 
 ## Public Traefik
@@ -78,7 +78,7 @@ echo $HASHED_PASSWORD
 * Create an environment variable with the domain name for your server, e.g.:
 
 ```bash
-export DOMAIN=fastapi-project.example.com
+export DOMAIN=gainbridge.example.com
 ```
 
 * Create an environment variable with the email for Let's Encrypt, e.g.:
@@ -103,9 +103,9 @@ Now with the environment variables set and the `compose.traefik.yml` in place, y
 docker compose -f compose.traefik.yml up -d
 ```
 
-## Deploy the FastAPI Project
+## Deploy Gainbridge
 
-Now that you have Traefik in place you can deploy your FastAPI project with Docker Compose.
+Now that you have Traefik in place you can deploy Gainbridge with Docker Compose.
 
 **Note**: You might want to jump ahead to the section about Continuous Deployment with GitHub Actions.
 
@@ -144,13 +144,7 @@ export ENVIRONMENT=production
 Set the `DOMAIN`, by default `localhost` (for development), but when deploying you would use your own domain, for example:
 
 ```bash
-export DOMAIN=fastapi-project.example.com
-```
-
-Set the `POSTGRES_PASSWORD` to something different than `changethis`:
-
-```bash
-export POSTGRES_PASSWORD="changethis"
+export DOMAIN=gainbridge.example.com
 ```
 
 Set the `SECRET_KEY`, used to sign tokens:
@@ -161,7 +155,7 @@ export SECRET_KEY="changethis"
 
 Note: you can use the Python command above to generate a secure secret key.
 
-Set the `FIRST_SUPER_USER_PASSWORD` to something different than `changethis`:
+Set the `FIRST_SUPERUSER_PASSWORD` to something different than `changethis`:
 
 ```bash
 export FIRST_SUPERUSER_PASSWORD="changethis"
@@ -175,18 +169,13 @@ export BACKEND_CORS_ORIGINS="https://dashboard.${DOMAIN?Variable not set},https:
 
 You can set several other environment variables:
 
-* `PROJECT_NAME`: The name of the project, used in the API for the docs and emails.
-* `STACK_NAME`: The name of the stack used for Docker Compose labels and project name, this should be different for `staging`, `production`, etc. You could use the same domain replacing dots with dashes, e.g. `fastapi-project-example-com` and `staging-fastapi-project-example-com`.
+* `PROJECT_NAME`: The name of the project, used in the API docs title.
+* `STACK_NAME`: The name of the stack used for Docker Compose labels and project name, this should be different for `staging`, `production`, etc. You could use the same domain replacing dots with dashes, e.g. `gainbridge-example-com` and `staging-gainbridge-example-com`.
 * `BACKEND_CORS_ORIGINS`: A list of allowed CORS origins separated by commas.
-* `FIRST_SUPERUSER`: The email of the first superuser, this superuser will be the one that can create new users.
-* `SMTP_HOST`: The SMTP server host to send emails, this would come from your email provider (E.g. Mailgun, Sparkpost, Sendgrid, etc).
-* `SMTP_USER`: The SMTP server user to send emails.
-* `SMTP_PASSWORD`: The SMTP server password to send emails.
-* `EMAILS_FROM_EMAIL`: The email account to send emails from.
-* `POSTGRES_PORT`: The port of the PostgreSQL server. You can leave the default. You normally wouldn't need to change this unless you are using a third-party provider.
-* `POSTGRES_USER`: The Postgres user, you can leave the default.
-* `POSTGRES_DB`: The database name to use for this application. You can leave the default of `app`.
+* `SQLITE_DB_FILE`: Path to the SQLite database file. Make sure this points somewhere persistent (a mounted volume) rather than ephemeral container storage.
 * `SENTRY_DSN`: The DSN for Sentry, if you are using it.
+
+`FIRST_SUPERUSER` and `FIRST_SUPERUSER_PASSWORD` are still required by `compose.yml` even though Gainbridge has no login/auth of its own; set them to any values.
 
 ## GitHub Actions Environment Variables
 
@@ -316,24 +305,24 @@ If you need to add extra environments you could use those as a starting point.
 
 ## URLs
 
-Replace `fastapi-project.example.com` with your domain.
+Replace `gainbridge.example.com` with your domain.
 
 ### Main Traefik Dashboard
 
-Traefik UI: `https://traefik.fastapi-project.example.com`
+Traefik UI: `https://traefik.gainbridge.example.com`
 
 ### Production
 
-Frontend: `https://dashboard.fastapi-project.example.com`
+Frontend: `https://dashboard.gainbridge.example.com`
 
-Backend API docs: `https://api.fastapi-project.example.com/docs`
+Backend API docs: `https://api.gainbridge.example.com/docs`
 
-Backend API base URL: `https://api.fastapi-project.example.com`
+Backend API base URL: `https://api.gainbridge.example.com`
 
 ### Staging
 
-Frontend: `https://dashboard.staging.fastapi-project.example.com`
+Frontend: `https://dashboard.staging.gainbridge.example.com`
 
-Backend API docs: `https://api.staging.fastapi-project.example.com/docs`
+Backend API docs: `https://api.staging.gainbridge.example.com/docs`
 
-Backend API base URL: `https://api.staging.fastapi-project.example.com`
+Backend API base URL: `https://api.staging.gainbridge.example.com`
