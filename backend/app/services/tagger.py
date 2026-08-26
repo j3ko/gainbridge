@@ -30,21 +30,21 @@ class TaggerService:
         if audio is None:
             return {}
         tags = {}
-        # Easy access for Vorbis/FLAC style
         if hasattr(audio, "tags") and audio.tags is not None:
             for key in (
                 "REPLAYGAIN_TRACK_GAIN",
                 "REPLAYGAIN_TRACK_PEAK",
                 "REPLAYGAIN_ALBUM_GAIN",
                 "REPLAYGAIN_ALBUM_PEAK",
-                "replaygain_track_gain",
-                "replaygain_track_peak",
-                "replaygain_album_gain",
-                "replaygain_album_peak",
             ):
-                val = audio.tags.get(key)
-                if val:
-                    tags[key.upper()] = str(val[0] if isinstance(val, list) else val)
+                # Vorbis/FLAC comments key by the plain field name; ID3
+                # (MP3) stores custom fields as TXXX frames keyed
+                # "TXXX:<desc>" instead.
+                for lookup in (key, key.lower(), f"TXXX:{key}"):
+                    val = audio.tags.get(lookup)
+                    if val:
+                        tags[key] = str(val[0] if isinstance(val, list) else val)
+                        break
         return tags
 
     def _gain_matches(self, existing: dict[str, str], loudness: LoudnessInfo) -> bool:

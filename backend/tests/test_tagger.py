@@ -1,3 +1,5 @@
+from mutagen.id3 import TXXX, ID3
+
 from app.schemas.gain import LoudnessInfo
 from app.services.tagger import TaggerService
 
@@ -123,3 +125,28 @@ def test_dry_run_does_not_write(tmp_path, monkeypatch):
 
     assert result.success is True
     assert result.message == "Dry run – tags not written"
+
+
+def test_read_existing_rg_finds_id3_txxx_frames(monkeypatch):
+    """MP3 ReplayGain tags are stored as ID3 TXXX frames, keyed
+    "TXXX:<desc>" rather than the plain field name used by Vorbis/FLAC
+    comments -- read_existing_rg must recognize both, or a "fix"/"skip"
+    rerun on MP3s never sees its own previously-written tags and
+    rewrites every track every time."""
+    id3 = ID3()
+    id3.add(TXXX(encoding=3, desc="REPLAYGAIN_TRACK_GAIN", text="-6.00 dB"))
+    id3.add(TXXX(encoding=3, desc="REPLAYGAIN_TRACK_PEAK", text="0.987"))
+
+    class FakeAudio:
+        tags = id3
+
+    monkeypatch.setattr(
+        "app.services.tagger.MutagenFile", lambda path, easy=False: FakeAudio()
+    )
+
+    existing = TaggerService().read_existing_rg("track.mp3")
+
+    assert existing == {
+        "REPLAYGAIN_TRACK_GAIN": "-6.00 dB",
+        "REPLAYGAIN_TRACK_PEAK": "0.987",
+    }
