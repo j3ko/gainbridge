@@ -44,8 +44,8 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str = "Gainbridge"
     SENTRY_DSN: HttpUrl | None = None
-    SQLITE_DB_FILE: str = "gainbridge.db"
-    LOG_FILE: str = "gainbridge.log"
+    SQLITE_DB_FILE: str = "data/gainbridge.db"
+    LOG_FILE: str = "data/gainbridge.log"
     # How long to keep finished (completed/failed/cancelled) job rows before
     # a scheduler tick prunes them, so a long-running cron doesn't grow the
     # jobs table forever.
