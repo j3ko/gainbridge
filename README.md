@@ -73,6 +73,7 @@ docker run -d \
   --name gainbridge \
   -p 8000:8000 \
   -v ./data:/app/data \
+  -v /path/to/music:/music \
   j3ko/gainbridge:latest
 ```
 
@@ -87,9 +88,9 @@ Configuration lives in the top-level `.env` file. At minimum, review:
 
 ## Documentation
 
-- [Backend development](./backend/README.md)
-- [Frontend development](./frontend/README.md)
-- [General development](./development.md) - Docker Compose, running services locally, pre-commit hooks.
+- [Backend development](https://github.com/j3ko/gainbridge/blob/main/backend/README.md)
+- [Frontend development](https://github.com/j3ko/gainbridge/blob/main/frontend/README.md)
+- [General development](https://github.com/j3ko/gainbridge/blob/main/development.md) - Docker Compose, running services locally, pre-commit hooks.
 
 ## License
 
