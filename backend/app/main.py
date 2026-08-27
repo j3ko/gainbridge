@@ -79,6 +79,6 @@ STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 if STATIC_DIR.is_dir():
     app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="assets")
 
-    @app.get("/{full_path:path}", include_in_schema=False)
+    @app.get("/{full_path:path}", tags=["spa"], include_in_schema=False)
     async def spa(full_path: str) -> FileResponse:
         return FileResponse(STATIC_DIR / "index.html")
