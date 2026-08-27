@@ -29,5 +29,5 @@ def main() -> None:
     stamp_if_legacy(engine)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

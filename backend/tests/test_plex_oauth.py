@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 import pytest
 
 from app.services import plex_oauth
@@ -57,6 +59,41 @@ def test_check_pin_unknown_id_raises_key_error():
         plex_oauth.check_pin("does-not-exist")
 
 
+class _ExplodingPinLogin:
+    def __init__(self, oauth=True):
+        raise RuntimeError("plex.tv unreachable")
+
+
+def test_create_pin_propagates_and_logs_failure(monkeypatch):
+    monkeypatch.setattr(plex_oauth, "MyPlexPinLogin", _ExplodingPinLogin)
+    with pytest.raises(RuntimeError, match="plex.tv unreachable"):
+        plex_oauth.create_pin()
+
+
+def test_check_pin_propagates_and_logs_failure(monkeypatch):
+    class _FailingCheckPinLogin(_FakePinLogin):
+        def checkLogin(self):
+            raise RuntimeError("plex.tv timeout")
+
+    monkeypatch.setattr(plex_oauth, "MyPlexPinLogin", _FailingCheckPinLogin)
+    plex_oauth.create_pin()
+    with pytest.raises(RuntimeError, match="plex.tv timeout"):
+        plex_oauth.check_pin("123")
+
+
+def test_create_pin_evicts_expired_entries(monkeypatch):
+    monkeypatch.setattr(plex_oauth, "MyPlexPinLogin", _FakePinLogin)
+    stale_login = _FakePinLogin()
+    plex_oauth._pending["stale"] = (
+        stale_login,
+        datetime.now(timezone.utc) - timedelta(minutes=20),
+    )
+
+    plex_oauth.create_pin()
+
+    assert "stale" not in plex_oauth._pending
+
+
 class _FakeConnection:
     def __init__(self, uri, local):
         self.uri = uri
@@ -95,3 +132,13 @@ def test_list_servers_filters_to_servers_with_connections(monkeypatch):
             "connections": [{"uri": "http://192.168.1.10:32400", "local": True}],
         }
     ]
+
+
+def test_list_servers_propagates_and_logs_failure(monkeypatch):
+    class _FailingAccount:
+        def __init__(self, token):
+            raise RuntimeError("bad token")
+
+    monkeypatch.setattr(plex_oauth, "MyPlexAccount", _FailingAccount)
+    with pytest.raises(RuntimeError, match="bad token"):
+        plex_oauth.list_servers("bad")

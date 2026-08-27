@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from app.stamp_legacy_db import logger, stamp_if_legacy
+from app.stamp_legacy_db import logger, main, stamp_if_legacy
 
 
 def test_stamps_pre_alembic_database() -> None:
@@ -32,6 +32,12 @@ def test_skips_fresh_database() -> None:
         stamp_if_legacy(engine_mock)
 
         command_mock.stamp.assert_not_called()
+
+
+def test_main_stamps_using_the_module_engine() -> None:
+    with patch("app.stamp_legacy_db.stamp_if_legacy") as stamp_mock:
+        main()
+        stamp_mock.assert_called_once()
 
 
 def test_skips_database_already_tracked_by_alembic() -> None:

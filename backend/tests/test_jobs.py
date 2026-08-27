@@ -76,8 +76,7 @@ def test_process_track_logs_tagger_skip(manager, caplog, monkeypatch):
     manager._process_track("job-1", _track(), False, "fix", [])
 
     assert any(
-        "[job job-1] skipped" in r.message
-        and "existing ReplayGain tags" in r.message
+        "[job job-1] skipped" in r.message and "existing ReplayGain tags" in r.message
         for r in caplog.records
     )
 
@@ -299,6 +298,41 @@ def test_shutdown_cancels_and_waits_for_a_running_job(manager, monkeypatch):
         final = check_session.get(Job, job.id)
         assert final.status == "cancelled"
         assert final.processed == 1
+
+
+def test_shutdown_logs_warning_when_a_job_does_not_stop_in_time(
+    manager, monkeypatch, caplog
+):
+    manager, session, _ = manager
+    session.add(Source(name="lib", type="plex", base_url="http://x", token="t"))
+    session.commit()
+    manager._SHUTDOWN_TIMEOUT = 0.05
+
+    started = threading.Event()
+    release = threading.Event()
+
+    class _StuckFetchingPlexService:
+        def __init__(self, base_url, token):
+            pass
+
+        def iter_tracks(self, library_id):
+            # Blocked before the per-track loop even starts, so it never
+            # notices cancel_event -- exactly what should time out shutdown.
+            started.set()
+            assert release.wait(timeout=5), "test setup: release was never set"
+            return []
+
+    monkeypatch.setattr(jobs_module, "PlexService", _StuckFetchingPlexService)
+    job = manager.create_job(session, JobCreate(source_name="lib"))
+    assert job is not None
+    assert started.wait(timeout=5), "worker never started fetching tracks"
+
+    caplog.set_level(logging.WARNING)
+    manager.cancel_all_active()
+    manager.shutdown()
+
+    assert any("did not stop within" in r.message for r in caplog.records)
+    release.set()  # let the worker thread finish so it doesn't linger
 
 
 # ----- read_log -----

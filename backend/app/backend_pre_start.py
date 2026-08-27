@@ -35,5 +35,5 @@ def main() -> None:
     logger.info("Service finished initializing")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()
