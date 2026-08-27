@@ -16,6 +16,7 @@ from app.api.main import api_router
 from app.core.config import settings
 from app.core.log_rotation import rotate_log_if_needed
 from app.core.logging_config import setup_logging
+from app.core.migrations import run_migrations
 from app.services.jobs import job_manager
 
 setup_logging()
@@ -43,6 +44,7 @@ async def _scheduler_loop() -> None:
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
+    run_migrations()
     task = asyncio.create_task(_scheduler_loop())
     yield
     task.cancel()
