@@ -128,12 +128,10 @@ export const JobPublicSchema = {
         },
         created_at: {
             type: 'string',
-            format: 'date-time',
             title: 'Created At'
         },
         updated_at: {
             type: 'string',
-            format: 'date-time',
             title: 'Updated At'
         }
     },
@@ -414,14 +412,12 @@ export const SourcePublicSchema = {
         },
         created_at: {
             type: 'string',
-            format: 'date-time',
             title: 'Created At'
         },
         next_run_at: {
             anyOf: [
                 {
-                    type: 'string',
-                    format: 'date-time'
+                    type: 'string'
                 },
                 {
                     type: 'null'
@@ -432,8 +428,7 @@ export const SourcePublicSchema = {
         last_run_at: {
             anyOf: [
                 {
-                    type: 'string',
-                    format: 'date-time'
+                    type: 'string'
                 },
                 {
                     type: 'null'

@@ -9,7 +9,7 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _to_utc_isoformat(dt: datetime | None) -> str | None:
+def _to_utc_isoformat(dt: datetime) -> str:
     """Serialize a datetime as UTC ISO 8601, tagging it with an offset.
 
     SQLite's DateTime column drops tzinfo on read, so values loaded from the
@@ -18,11 +18,13 @@ def _to_utc_isoformat(dt: datetime | None) -> str | None:
     local time instead of UTC, shifting displayed timestamps by the
     browser's UTC offset.
     """
-    if dt is None:
-        return None
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.isoformat()
+
+
+def _to_utc_isoformat_optional(dt: datetime | None) -> str | None:
+    return None if dt is None else _to_utc_isoformat(dt)
 
 
 class SourceBase(SQLModel):
@@ -61,9 +63,13 @@ class SourcePublic(SourceBase):
     last_run_at: datetime | None = None
     path_mappings: list["PathMappingPublic"] = []
 
-    @field_serializer("created_at", "next_run_at", "last_run_at")
-    def _serialize_utc(self, dt: datetime | None) -> str | None:
+    @field_serializer("created_at")
+    def _serialize_created_at(self, dt: datetime) -> str:
         return _to_utc_isoformat(dt)
+
+    @field_serializer("next_run_at", "last_run_at")
+    def _serialize_optional_utc(self, dt: datetime | None) -> str | None:
+        return _to_utc_isoformat_optional(dt)
 
 
 # A single Plex/Jellyfin library can span multiple folders on disk (e.g. a
@@ -154,7 +160,7 @@ class JobPublic(JobBase):
     updated_at: datetime
 
     @field_serializer("created_at", "updated_at")
-    def _serialize_utc(self, dt: datetime) -> str | None:
+    def _serialize_utc(self, dt: datetime) -> str:
         return _to_utc_isoformat(dt)
 
 
