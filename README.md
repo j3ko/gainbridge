@@ -22,19 +22,19 @@ Plex and Jellyfin both analyze audio loudness for their own volume-leveling feat
 
 ### Sources
 
-![Sources](img/sources.png)
+![Sources](https://github.com/j3ko/gainbridge/blob/main/img/sources.png?raw=true)
 
 ### Jobs
 
-![Jobs](img/jobs.png)
+![Jobs](https://github.com/j3ko/gainbridge/blob/main/img/jobs.png?raw=true)
 
 ### Logs
 
-![Logs](img/logs.png)
+![Logs](https://github.com/j3ko/gainbridge/blob/main/img/logs.png?raw=true)
 
 ### Interactive API Documentation
 
-![API docs](img/api-docs.png)
+![API docs](https://github.com/j3ko/gainbridge/blob/main/img/api-docs.png?raw=true)
 
 ## Technology Stack
 
