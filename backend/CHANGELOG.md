@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/j3ko/gainbridge/compare/v0.1.0...v0.1.1) (2026-08-27)
+
+
+### Bug Fixes
+
+* serialize job/source timestamps with explicit UTC offset ([182ac20](https://github.com/j3ko/gainbridge/commit/182ac20207b121dceba505e3cb3738d86f9558e7))
+* use non-nullable return types for required-field UTC serializers ([15222fd](https://github.com/j3ko/gainbridge/commit/15222fd2a23b89eb1f491f7d56f2bef314e51f9b))
+
 ## 0.1.0 (2026-08-27)
 
 
