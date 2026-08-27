@@ -1,6 +1,6 @@
 from collections.abc import Generator
 
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, create_engine
 
 from app.core.config import settings
 
@@ -9,13 +9,6 @@ engine = create_engine(
     str(settings.SQLALCHEMY_DATABASE_URI),
     connect_args=connect_args,
 )
-
-
-def init_db() -> None:
-    # Import models so metadata is registered
-    from app.models import Job, PathMapping, Source  # noqa: F401
-
-    SQLModel.metadata.create_all(engine)
 
 
 def get_session() -> Generator[Session, None, None]:

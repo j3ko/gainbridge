@@ -54,10 +54,9 @@ services:
       dockerfile: backend/Dockerfile
     # command: sleep infinity  # Infinite loop to keep container alive doing nothing
     command:
-      - fastapi
-      - run
-      - --reload
-      - "app/main.py"
+      - sh
+      - -c
+      - bash scripts/prestart.sh && fastapi run --reload app/main.py
     develop:
       watch:
         - path: ./backend
