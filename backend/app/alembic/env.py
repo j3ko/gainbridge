@@ -10,7 +10,10 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-fileConfig(config.config_file_name)
+# disable_existing_loggers=False: fileConfig() defaults to True, which would
+# silently disable the app's own "app" logger (run_migrations() calls
+# alembic from inside the running app now, not just as a one-off CLI step).
+fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
