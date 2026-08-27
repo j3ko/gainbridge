@@ -44,8 +44,11 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str = "Gainbridge"
     SENTRY_DSN: HttpUrl | None = None
-    SQLITE_DB_FILE: str = "data/gainbridge.db"
-    LOG_FILE: str = "data/gainbridge.log"
+    # Relative to backend/ (where the app runs from, in Docker and locally),
+    # so this lands in a top-level data/ folder next to backend/ and
+    # frontend/ - not inside backend/ itself.
+    SQLITE_DB_FILE: str = "../data/gainbridge.db"
+    LOG_FILE: str = "../data/gainbridge.log"
     # How long to keep finished (completed/failed/cancelled) job rows before
     # a scheduler tick prunes them, so a long-running cron doesn't grow the
     # jobs table forever.

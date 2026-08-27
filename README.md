@@ -72,7 +72,7 @@ Use `:edge` instead of `:latest` to track the tip of `main` between releases.
 docker run -d \
   --name gainbridge \
   -p 8000:8000 \
-  -v ./data:/app/backend/data \
+  -v ./data:/app/data \
   j3ko/gainbridge:latest
 ```
 
