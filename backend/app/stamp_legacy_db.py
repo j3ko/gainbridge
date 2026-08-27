@@ -6,7 +6,6 @@ from sqlalchemy import Engine, inspect
 
 from app.core.db import engine
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -30,4 +29,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":  # pragma: no cover
+    logging.basicConfig(level=logging.INFO)
     main()
