@@ -74,10 +74,12 @@ docker run -d \
   -p 8000:8000 \
   -v ./data:/app/data \
   -v /path/to/music:/music \
+  -v /etc/localtime:/etc/localtime:ro \
+  -v /etc/timezone:/etc/timezone:ro \
   j3ko/gainbridge:latest
 ```
 
-The `data/` volume mount keeps the SQLite database and log file across container restarts and upgrades. See [Configuration](#configuration) below for other environment variables.
+The `data/` volume mount keeps the SQLite database and log file across container restarts and upgrades. The `/etc/localtime` and `/etc/timezone` mounts match the container's timezone to the host's, so timestamps shown in the UI are in local time instead of UTC. See [Configuration](#configuration) below for other environment variables.
 
 ## Configuration
 

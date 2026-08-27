@@ -1,11 +1,28 @@
 from datetime import datetime, timezone
 from typing import Literal
 
+from pydantic import field_serializer
 from sqlmodel import Field, Relationship, SQLModel
 
 
 def utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _to_utc_isoformat(dt: datetime | None) -> str | None:
+    """Serialize a datetime as UTC ISO 8601, tagging it with an offset.
+
+    SQLite's DateTime column drops tzinfo on read, so values loaded from the
+    DB are naive even though they were written via utcnow(). Without an
+    explicit offset, JS's `new Date(...)` on the client parses the string as
+    local time instead of UTC, shifting displayed timestamps by the
+    browser's UTC offset.
+    """
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.isoformat()
 
 
 class SourceBase(SQLModel):
@@ -43,6 +60,10 @@ class SourcePublic(SourceBase):
     next_run_at: datetime | None = None
     last_run_at: datetime | None = None
     path_mappings: list["PathMappingPublic"] = []
+
+    @field_serializer("created_at", "next_run_at", "last_run_at")
+    def _serialize_utc(self, dt: datetime | None) -> str | None:
+        return _to_utc_isoformat(dt)
 
 
 # A single Plex/Jellyfin library can span multiple folders on disk (e.g. a
@@ -131,6 +152,10 @@ class JobPublic(JobBase):
     id: str
     created_at: datetime
     updated_at: datetime
+
+    @field_serializer("created_at", "updated_at")
+    def _serialize_utc(self, dt: datetime) -> str | None:
+        return _to_utc_isoformat(dt)
 
 
 class JobsPublic(SQLModel):
