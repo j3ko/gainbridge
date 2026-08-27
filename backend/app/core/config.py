@@ -1,11 +1,9 @@
-import warnings
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
 from pydantic import (
     AnyUrl,
     BeforeValidator,
-    EmailStr,
     HttpUrl,
     computed_field,
     model_validator,
@@ -44,7 +42,7 @@ class Settings(BaseSettings):
             self.FRONTEND_HOST
         ]
 
-    PROJECT_NAME: str
+    PROJECT_NAME: str = "Gainbridge"
     SENTRY_DSN: HttpUrl | None = None
     SQLITE_DB_FILE: str = "gainbridge.db"
     LOG_FILE: str = "gainbridge.log"
@@ -62,53 +60,11 @@ class Settings(BaseSettings):
     def SQLALCHEMY_DATABASE_URI(self) -> str:
         return f"sqlite:///{self.SQLITE_DB_FILE}"
 
-    SMTP_TLS: bool = True
-    SMTP_SSL: bool = False
-    SMTP_PORT: int = 587
-    SMTP_HOST: str | None = None
-    SMTP_USER: str | None = None
-    SMTP_PASSWORD: str | None = None
-    EMAILS_FROM_EMAIL: EmailStr | None = None
-    EMAILS_FROM_NAME: str | None = None
-
-    @model_validator(mode="after")
-    def _set_default_emails_from(self) -> Self:
-        if not self.EMAILS_FROM_NAME:
-            self.EMAILS_FROM_NAME = self.PROJECT_NAME
-        return self
-
     @model_validator(mode="after")
     def _ensure_data_dirs(self) -> Self:
         Path(self.SQLITE_DB_FILE).parent.mkdir(parents=True, exist_ok=True)
         Path(self.LOG_FILE).parent.mkdir(parents=True, exist_ok=True)
         return self
 
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def emails_enabled(self) -> bool:
-        return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
 
-    FIRST_SUPERUSER: EmailStr
-    FIRST_SUPERUSER_PASSWORD: str
-
-    def _check_default_secret(self, var_name: str, value: str | None) -> None:
-        if value == "changethis":
-            message = (
-                f'The value of {var_name} is "changethis", '
-                "for security, please change it, at least for deployments."
-            )
-            if self.ENVIRONMENT == "local":
-                warnings.warn(message, stacklevel=1)
-            else:
-                raise ValueError(message)
-
-    @model_validator(mode="after")
-    def _enforce_non_default_secrets(self) -> Self:
-        self._check_default_secret(
-            "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
-        )
-
-        return self
-
-
-settings = Settings()  # type: ignore
+settings = Settings()

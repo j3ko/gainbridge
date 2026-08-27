@@ -72,9 +72,6 @@ Use `:edge` instead of `:latest` to track the tip of `main` between releases.
 docker run -d \
   --name gainbridge \
   -p 8000:8000 \
-  -e PROJECT_NAME=Gainbridge \
-  -e FIRST_SUPERUSER=admin@example.com \
-  -e FIRST_SUPERUSER_PASSWORD=changethis \
   -v ./data:/app/backend/data \
   j3ko/gainbridge:latest
 ```
