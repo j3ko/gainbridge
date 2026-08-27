@@ -15,11 +15,13 @@ logger = logging.getLogger(__name__)
 def run_migrations() -> None:
     """Apply Alembic migrations, safe to call from every worker process.
 
-    `fastapi run --workers N` starts N separate processes that each run the
-    app lifespan independently. Without a lock, all of them would race to
-    apply migrations against the same SQLite file on first start. The file
-    lock serializes them: one worker migrates while the rest block, then
-    proceed once it's done (upgrading an already-current DB is a no-op).
+    The app runs single-process by default, but `fastapi run --workers N`
+    would start N separate processes that each run the app lifespan
+    independently. Without a lock, all of them would race to apply
+    migrations against the same SQLite file on first start. The file lock
+    serializes them: one worker migrates while the rest block, then proceed
+    once it's done (upgrading an already-current DB is a no-op) - kept as a
+    safety net in case this ever runs with more than one worker again.
     """
     lock_path = Path(settings.SQLITE_DB_FILE).parent / ".migrations.lock"
     lock_path.parent.mkdir(parents=True, exist_ok=True)
