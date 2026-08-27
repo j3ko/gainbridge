@@ -65,7 +65,7 @@ cd backend
 fastapi dev app/main.py
 ```
 
-When you deploy to production (or staging), each service is deployed on a different subdomain instead, like `api.example.com` for the backend and `dashboard.example.com` for the frontend. See [deployment.md](deployment.md) for how Traefik handles that routing.
+This local dev setup (separate backend/frontend containers) is only for development. The published image bundles both into a single container - see the "Running with Docker" section in the [README](README.md).
 
 ## Docker Compose files and env vars
 

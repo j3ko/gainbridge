@@ -3,10 +3,13 @@ import contextlib
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import sentry_sdk
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from fastapi.routing import APIRoute
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
@@ -68,3 +71,14 @@ if settings.all_cors_origins:
     )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+# Serves the built frontend when bundled alongside the backend in the
+# published single-image release; absent (and a no-op) in local dev, where
+# the frontend runs as its own container/dev server.
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+if STATIC_DIR.is_dir():
+    app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def spa(full_path: str) -> FileResponse:
+        return FileResponse(STATIC_DIR / "index.html")

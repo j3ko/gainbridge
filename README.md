@@ -41,8 +41,8 @@ Plex and Jellyfin both analyze audio loudness for their own volume-leveling feat
 - ⚡ [FastAPI](https://fastapi.tiangolo.com) backend, with [SQLModel](https://sqlmodel.tiangolo.com) over SQLite and [Alembic](https://alembic.sqlalchemy.org) migrations.
 - 🚀 [React](https://react.dev) frontend, using TypeScript, [Vite](https://vitejs.dev), [TanStack Query](https://tanstack.com/query)/[Router](https://tanstack.com/router), [Tailwind CSS](https://tailwindcss.com), and [shadcn/ui](https://ui.shadcn.com).
 - 🤖 An automatically generated frontend API client.
-- 🐋 Docker Compose for development and production.
-- 📞 [Traefik](https://traefik.io) as a reverse proxy for deployments.
+- 🐋 Docker Compose for local development.
+- 📦 A single multi-arch (amd64/arm64) Docker image published to [Docker Hub](https://hub.docker.com/r/j3ko/gainbridge) for production.
 
 ## Quick Start
 
@@ -58,6 +58,29 @@ Then open:
 
 From there, add a Plex or Jellyfin source with its server URL and an API token, optionally scope it to one library and set a sync schedule, and run a sync.
 
+## Running with Docker
+
+For production, pull the published image, which bundles the backend and frontend into a single container:
+
+```bash
+docker pull j3ko/gainbridge:latest
+```
+
+Use `:edge` instead of `:latest` to track the tip of `main` between releases.
+
+```bash
+docker run -d \
+  --name gainbridge \
+  -p 8000:8000 \
+  -e PROJECT_NAME=Gainbridge \
+  -e FIRST_SUPERUSER=admin@example.com \
+  -e FIRST_SUPERUSER_PASSWORD=changethis \
+  -v ./data:/app/backend/data \
+  j3ko/gainbridge:latest
+```
+
+The `data/` volume mount keeps the SQLite database and log file across container restarts and upgrades. See [Configuration](#configuration) below for other environment variables.
+
 ## Configuration
 
 Configuration lives in the top-level `.env` file. At minimum, review:
@@ -70,7 +93,6 @@ Configuration lives in the top-level `.env` file. At minimum, review:
 - [Backend development](./backend/README.md)
 - [Frontend development](./frontend/README.md)
 - [General development](./development.md) - Docker Compose, running services locally, pre-commit hooks.
-- [Deployment](./deployment.md) - Traefik, HTTPS, CI/CD.
 
 ## License
 
