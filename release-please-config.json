@@ -4,12 +4,5 @@
     "backend": {
       "release-type": "python"
     }
-  },
-  "extra-files": [
-    {
-      "path": "uv.lock",
-      "type": "toml",
-      "jsonpath": "$.package[?(@.name.value=='app')].version"
-    }
-  ]
+  }
 }

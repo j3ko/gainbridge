@@ -2,6 +2,7 @@
 
 export type AppConfig = {
     timezone: string;
+    version: string;
 };
 
 export type HTTPValidationError = {

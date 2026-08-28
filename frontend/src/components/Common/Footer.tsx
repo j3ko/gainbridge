@@ -1,5 +1,6 @@
+import { useQuery } from "@tanstack/react-query"
 import { FaGithub } from "react-icons/fa"
-import { OpenAPI } from "@/client"
+import { UtilsService } from "@/client"
 
 const socialLinks = [
   {
@@ -11,12 +12,16 @@ const socialLinks = [
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
+  const { data: config } = useQuery({
+    queryKey: ["config"],
+    queryFn: () => UtilsService.getConfig(),
+  })
 
   return (
     <footer className="border-t py-4 px-6">
       <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
         <p className="text-muted-foreground text-sm">
-          Gainbridge v{OpenAPI.VERSION} - {currentYear}
+          Gainbridge{config && ` v${config.version}`} - {currentYear}
         </p>
         <div className="flex items-center gap-4">
           {socialLinks.map(({ icon: Icon, href, label }) => (

@@ -5,10 +5,14 @@ export const AppConfigSchema = {
         timezone: {
             type: 'string',
             title: 'Timezone'
+        },
+        version: {
+            type: 'string',
+            title: 'Version'
         }
     },
     type: 'object',
-    required: ['timezone'],
+    required: ['timezone', 'version'],
     title: 'AppConfig'
 } as const;
 
