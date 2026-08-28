@@ -30,7 +30,12 @@ def _utcnow() -> datetime:
 
 
 def _compute_next_run(cron_expr: str, base: datetime | None = None) -> datetime:
-    return croniter(cron_expr, base or _utcnow()).get_next(datetime)
+    # croniter reads the cron's fields (e.g. the "23" in "0 23 * * *") as the
+    # wall-clock hour of whatever tzinfo `base` carries, so evaluate it in
+    # settings.TIMEZONE - the zone schedules are meant to run in - rather
+    # than UTC, then convert the result back to UTC for storage.
+    local_base = (base or _utcnow()).astimezone(settings.timezone)
+    return croniter(cron_expr, local_base).get_next(datetime).astimezone(timezone.utc)
 
 
 def _validate_path_mapping(remote_path: str, local_path: str) -> None:

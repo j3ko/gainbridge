@@ -79,7 +79,7 @@ docker run -d \
   j3ko/gainbridge:latest
 ```
 
-The `data/` volume mount keeps the SQLite database and log file across container restarts and upgrades. The `/etc/localtime` and `/etc/timezone` mounts match the container's timezone to the host's, so timestamps shown in the UI are in local time instead of UTC. See [Configuration](#configuration) below for other environment variables.
+The `data/` volume mount keeps the SQLite database and log file across container restarts and upgrades. The `/etc/localtime` and `/etc/timezone` mounts match the container's timezone to the host's, so timestamps shown in the UI are in local time instead of UTC, and source schedules (`schedule_cron`) run at the wall-clock time you'd expect rather than UTC. See [Configuration](#configuration) below for other environment variables.
 
 ## Configuration
 
@@ -87,6 +87,7 @@ Configuration lives in the top-level `.env` file. At minimum, review:
 
 - `SQLITE_DB_FILE` / `LOG_FILE` - paths to the SQLite database and log file, by default under the top-level `data/` folder, which is bind-mounted into the backend container so it persists across restarts and redeploys.
 - `BACKEND_CORS_ORIGINS` - required if the frontend is served from a different origin than the backend.
+- `TIMEZONE` - IANA zone name (e.g. `America/Toronto`) that source schedules (`schedule_cron`) are evaluated in. Auto-detected from the `TZ` env var or the container's system timezone (see the `/etc/localtime`/`/etc/timezone` mounts above) if unset - only set this to override that detection.
 
 ## Documentation
 

@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import pytest
 from croniter import croniter
 from sqlmodel import Session, SQLModel, create_engine, select
 
+from app.core.config import settings
 from app.models import Job, Source
 from app.services import jobs as jobs_module
 from app.services.jobs import JobManager
@@ -16,6 +18,9 @@ def _naive(dt: datetime) -> datetime:
 
 @pytest.fixture
 def manager(monkeypatch):
+    # Schedule tests assert exact next-run times, so pin the zone cron
+    # expressions are evaluated in regardless of the deployer's .env.
+    monkeypatch.setattr(settings, "TIMEZONE", "UTC")
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False})
     SQLModel.metadata.create_all(engine)
     monkeypatch.setattr(jobs_module, "engine", engine)
@@ -52,6 +57,21 @@ def test_set_schedule_computes_next_run(manager, cron_expr):
     assert source.schedule_cron == cron_expr
     assert source.next_run_at is not None
     assert abs((_naive(source.next_run_at) - _naive(expected)).total_seconds()) < 2
+
+
+def test_set_schedule_evaluates_cron_in_configured_timezone(manager, monkeypatch):
+    manager, session, _ = manager
+    monkeypatch.setattr(settings, "TIMEZONE", "America/Toronto")
+    _add_source(session)
+
+    source = manager.set_schedule(session, "lib", "0 23 * * *")
+
+    assert source.next_run_at is not None
+    next_run_local = source.next_run_at.replace(tzinfo=timezone.utc).astimezone(
+        ZoneInfo("America/Toronto")
+    )
+    assert next_run_local.hour == 23
+    assert next_run_local.minute == 0
 
 
 def test_clear_schedule(manager):

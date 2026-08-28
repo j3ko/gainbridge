@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { JobsCreateJobData, JobsCreateJobResponse, JobsListJobsData, JobsListJobsResponse, JobsGetJobsLogData, JobsGetJobsLogResponse, JobsGetJobData, JobsGetJobResponse, JobsCancelJobData, JobsCancelJobResponse, SourcesListSourcesResponse, SourcesAddSourceData, SourcesAddSourceResponse, SourcesDeleteSourceData, SourcesDeleteSourceResponse, SourcesSetScheduleData, SourcesSetScheduleResponse, SourcesClearScheduleData, SourcesClearScheduleResponse, SourcesTestSourceData, SourcesTestSourceResponse, SourcesTestConnectionData, SourcesTestConnectionResponse, SourcesListLibrariesForConnectionData, SourcesListLibrariesForConnectionResponse, SourcesCreatePlexPinResponse, SourcesCheckPlexPinData, SourcesCheckPlexPinResponse, SourcesListPlexServersData, SourcesListPlexServersResponse, SourcesListLibrariesData, SourcesListLibrariesResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { JobsCreateJobData, JobsCreateJobResponse, JobsListJobsData, JobsListJobsResponse, JobsGetJobsLogData, JobsGetJobsLogResponse, JobsGetJobData, JobsGetJobResponse, JobsCancelJobData, JobsCancelJobResponse, SourcesListSourcesResponse, SourcesAddSourceData, SourcesAddSourceResponse, SourcesDeleteSourceData, SourcesDeleteSourceResponse, SourcesSetScheduleData, SourcesSetScheduleResponse, SourcesClearScheduleData, SourcesClearScheduleResponse, SourcesTestSourceData, SourcesTestSourceResponse, SourcesTestConnectionData, SourcesTestConnectionResponse, SourcesListLibrariesForConnectionData, SourcesListLibrariesForConnectionResponse, SourcesCreatePlexPinResponse, SourcesCheckPlexPinData, SourcesCheckPlexPinResponse, SourcesListPlexServersData, SourcesListPlexServersResponse, SourcesListLibrariesData, SourcesListLibrariesResponse, UtilsHealthCheckResponse, UtilsGetConfigResponse } from './types.gen';
 
 export class JobsService {
     /**
@@ -344,6 +344,18 @@ export class UtilsService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/utils/health-check/'
+        });
+    }
+    
+    /**
+     * Get Config
+     * @returns AppConfig Successful Response
+     * @throws ApiError
+     */
+    public static getConfig(): CancelablePromise<UtilsGetConfigResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/utils/config/'
         });
     }
 }
