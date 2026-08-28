@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Annotated, Any, Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -5,6 +6,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from pydantic import (
     AnyUrl,
     BeforeValidator,
+    Field,
     HttpUrl,
     computed_field,
     model_validator,
@@ -19,6 +21,26 @@ def parse_cors(v: Any) -> list[str] | str:
     elif isinstance(v, list | str):
         return v
     raise ValueError(v)
+
+
+def _detect_timezone() -> str:
+    """Best-effort IANA zone for a TIMEZONE that wasn't explicitly set.
+
+    Checks, in order: the standard TZ env var, Debian-style /etc/timezone
+    (what the README's docker run bind-mounts from the host), and the
+    /etc/localtime symlink target - falling back to UTC if none resolve.
+    """
+    if tz := os.environ.get("TZ"):
+        return tz
+    try:
+        return Path("/etc/timezone").read_text().strip()
+    except OSError:
+        pass
+    try:
+        return str(Path("/etc/localtime").resolve().relative_to("/usr/share/zoneinfo"))
+    except (OSError, ValueError):
+        pass
+    return "UTC"
 
 
 class Settings(BaseSettings):
@@ -61,7 +83,9 @@ class Settings(BaseSettings):
     # IANA zone name (e.g. "America/Toronto") that source schedule_cron
     # expressions are evaluated in. Everything is still stored/served as
     # UTC; this only controls what wall-clock time a cron's fields mean.
-    TIMEZONE: str = "UTC"
+    # Auto-detected from the container's system timezone (or TZ) when unset
+    # - see _detect_timezone - so set this only to override that.
+    TIMEZONE: str = Field(default_factory=_detect_timezone)
 
     @computed_field  # type: ignore[prop-decorator]
     @property
