@@ -1,3 +1,5 @@
+from importlib.metadata import version
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -13,8 +15,9 @@ async def health_check() -> bool:
 
 class AppConfig(BaseModel):
     timezone: str
+    version: str
 
 
 @router.get("/config/")
 async def get_config() -> AppConfig:
-    return AppConfig(timezone=settings.TIMEZONE)
+    return AppConfig(timezone=settings.TIMEZONE, version=version("app"))
