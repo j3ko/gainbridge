@@ -19,11 +19,11 @@ jobs:
     - uses: actions/labeler@v7
       if: ${{ github.event.action != 'labeled' && github.event.action != 'unlabeled' }}
     - run: echo "Done adding labels"
-  # Labels human PRs by their Conventional Commits title prefix. Every
-  # recognized type is mapped to one of check-labels' required categories -
-  # perf folds into refactor, and style/test/revert fold into internal - so
-  # no valid conventional-commit title can fall through unlabeled. Skipped
-  # for dependabot, which already gets its labels straight from
+  # Labels human PRs by their Conventional Commits title prefix. Each
+  # recognized type keeps its own label rather than folding into a shared
+  # bucket - only feat/fix/docs/perf are renamed (to match existing/clearer
+  # label names), everything else uses its literal type as the label.
+  # Skipped for dependabot, which already gets its labels straight from
   # dependabot.yml and doesn't use conventional titles.
   pr-title-labeler:
     if: ${{ github.actor != 'dependabot[bot]' && github.event.action != 'labeled' && github.event.action != 'unlabeled' }}
@@ -36,7 +36,7 @@ jobs:
       - uses: ytanikin/PRConventionalCommits@b628c5a234cc32513014b7bfdd1e47b532124d98 # 1.3.0
         with:
           task_types: '["feat","fix","docs","style","refactor","perf","test","build","ci","chore","revert"]'
-          custom_labels: '{"feat": "feature", "fix": "bug", "docs": "docs", "style": "internal", "refactor": "refactor", "perf": "refactor", "test": "internal", "build": "upgrade", "ci": "internal", "chore": "internal", "revert": "internal"}'
+          custom_labels: '{"feat": "feature", "fix": "bug", "docs": "documentation", "perf": "performance"}'
   # Run this after labeler/pr-title-labeler applied labels
   check-labels:
     needs:
@@ -48,5 +48,5 @@ jobs:
     steps:
       - uses: docker://agilepathway/pull-request-label-checker:latest
         with:
-          one_of: breaking change,feature,bug,docs,refactor,upgrade,internal
+          one_of: breaking change,feature,bug,documentation,performance,style,refactor,test,build,ci,chore,revert,internal
           repo_token: ${{ secrets.GITHUB_TOKEN }}
