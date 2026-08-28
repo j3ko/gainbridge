@@ -1,4 +1,4 @@
-docs:
+documentation:
   - all:
     - changed-files:
       - any-glob-to-any-file:
