@@ -1,11 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Clock } from "lucide-react"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { type SourcePublic, SourcesService } from "@/client"
+import { type SourcePublic, SourcesService, UtilsService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -62,6 +62,11 @@ const ScheduleSource = ({ source, onSuccess }: ScheduleSourceProps) => {
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
+  const { data: config } = useQuery({
+    queryKey: ["config"],
+    queryFn: () => UtilsService.getConfig(),
+  })
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: "onBlur",
@@ -113,6 +118,13 @@ const ScheduleSource = ({ source, onSuccess }: ScheduleSourceProps) => {
               <DialogDescription>
                 Automatically run a sync for "{source.name}" on a recurring
                 schedule.
+                {config && (
+                  <>
+                    {" "}
+                    Times are evaluated in the server's configured timezone (
+                    {config.timezone}).
+                  </>
+                )}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">

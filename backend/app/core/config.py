@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Annotated, Any, Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import (
     AnyUrl,
@@ -57,11 +58,27 @@ class Settings(BaseSettings):
     # ...), and how many rotated backups to keep around.
     LOG_MAX_BYTES: int = 10 * 1024 * 1024
     LOG_BACKUP_COUNT: int = 5
+    # IANA zone name (e.g. "America/Toronto") that source schedule_cron
+    # expressions are evaluated in. Everything is still stored/served as
+    # UTC; this only controls what wall-clock time a cron's fields mean.
+    TIMEZONE: str = "UTC"
 
     @computed_field  # type: ignore[prop-decorator]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
         return f"sqlite:///{self.SQLITE_DB_FILE}"
+
+    @property
+    def timezone(self) -> ZoneInfo:
+        return ZoneInfo(self.TIMEZONE)
+
+    @model_validator(mode="after")
+    def _validate_timezone(self) -> Self:
+        try:
+            ZoneInfo(self.TIMEZONE)
+        except ZoneInfoNotFoundError as e:
+            raise ValueError(f"Unknown TIMEZONE: {self.TIMEZONE!r}") from e
+        return self
 
     @model_validator(mode="after")
     def _ensure_data_dirs(self) -> Self:
