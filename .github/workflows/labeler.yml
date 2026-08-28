@@ -37,11 +37,15 @@ jobs:
         with:
           task_types: '["feat","fix","docs","style","refactor","perf","test","build","ci","chore","revert"]'
           custom_labels: '{"feat": "feature", "fix": "bug", "docs": "documentation", "perf": "performance"}'
-  # Run this after labeler/pr-title-labeler applied labels
+  # Run this after labeler/pr-title-labeler applied labels. pr-title-labeler
+  # is deliberately skipped for dependabot and for labeled/unlabeled events -
+  # a skipped needs job makes a job skip too by default, so without this
+  # override check-labels would never run at all for dependabot PRs.
   check-labels:
     needs:
       - labeler
       - pr-title-labeler
+    if: ${{ !cancelled() }}
     permissions:
       pull-requests: read
     runs-on: ubuntu-latest
