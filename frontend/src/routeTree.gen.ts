@@ -11,8 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
-import { Route as LayoutLogsRouteImport } from './routes/_layout/logs'
 import { Route as LayoutJobsRouteImport } from './routes/_layout/jobs'
+import { Route as LayoutLogsRouteImport } from './routes/_layout/logs'
 
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
@@ -23,14 +23,14 @@ const LayoutIndexRoute = LayoutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutLogsRoute = LayoutLogsRouteImport.update({
-  id: '/logs',
-  path: '/logs',
-  getParentRoute: () => LayoutRoute,
-} as any)
 const LayoutJobsRoute = LayoutJobsRouteImport.update({
   id: '/jobs',
   path: '/jobs',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutLogsRoute = LayoutLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -79,18 +79,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/logs': {
-      id: '/_layout/logs'
-      path: '/logs'
-      fullPath: '/logs'
-      preLoaderRoute: typeof LayoutLogsRouteImport
-      parentRoute: typeof LayoutRoute
-    }
     '/_layout/jobs': {
       id: '/_layout/jobs'
       path: '/jobs'
       fullPath: '/jobs'
       preLoaderRoute: typeof LayoutJobsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/logs': {
+      id: '/_layout/logs'
+      path: '/logs'
+      fullPath: '/logs'
+      preLoaderRoute: typeof LayoutLogsRouteImport
       parentRoute: typeof LayoutRoute
     }
   }

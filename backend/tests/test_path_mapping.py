@@ -30,9 +30,7 @@ def test_remap_path_exact_match():
 
 def test_remap_path_nested_subpath():
     assert (
-        _remap_path(
-            "/data/music/Artist/track.flac", [("/data/music", "/mnt/music")]
-        )
+        _remap_path("/data/music/Artist/track.flac", [("/data/music", "/mnt/music")])
         == "/mnt/music/Artist/track.flac"
     )
 
@@ -54,9 +52,7 @@ def test_remap_path_false_prefix_not_matched():
 
 def test_remap_path_trailing_slash_tolerance():
     assert (
-        _remap_path(
-            "/data/music/Artist/track.flac", [("/data/music/", "/mnt/music/")]
-        )
+        _remap_path("/data/music/Artist/track.flac", [("/data/music/", "/mnt/music/")])
         == "/mnt/music/Artist/track.flac"
     )
 
@@ -110,7 +106,9 @@ def test_add_source_rejects_nonexistent_local_path(manager, tmp_path):
                 base_url="http://x",
                 token="t",
                 path_mappings=[
-                    PathMappingCreate(remote_path="/data/music", local_path=str(missing))
+                    PathMappingCreate(
+                        remote_path="/data/music", local_path=str(missing)
+                    )
                 ],
             ),
         )
