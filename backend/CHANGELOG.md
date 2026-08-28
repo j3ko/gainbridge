@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/j3ko/gainbridge/compare/v0.1.1...v0.2.0) (2026-08-28)
+
+
+### Features
+
+* display app version in UI footer ([#26](https://github.com/j3ko/gainbridge/issues/26)) ([99fa011](https://github.com/j3ko/gainbridge/commit/99fa011606f8e0d3fa72ba36dc639c5c42f3b3fe))
+
+
+### Bug Fixes
+
+* evaluate source schedule cron in a configured timezone ([#28](https://github.com/j3ko/gainbridge/issues/28)) ([ac886a6](https://github.com/j3ko/gainbridge/commit/ac886a6ed6cddf5e23a30e51bb3932af1e1e0006))
+* recover PR [#46](https://github.com/j3ko/gainbridge/issues/46)'s changes that never reached main ([#47](https://github.com/j3ko/gainbridge/issues/47)) ([6360b0f](https://github.com/j3ko/gainbridge/commit/6360b0f73de0dc79d829fdf8b87ea35bac01e323))
+
 ## [0.1.1](https://github.com/j3ko/gainbridge/compare/v0.1.0...v0.1.1) (2026-08-27)
 
 
