@@ -48,5 +48,5 @@ jobs:
     steps:
       - uses: docker://agilepathway/pull-request-label-checker:latest
         with:
-          one_of: breaking change,security,feature,bug,refactor,upgrade,docs,lang-all,internal
+          one_of: breaking change,feature,bug,docs,refactor,upgrade,internal
           repo_token: ${{ secrets.GITHUB_TOKEN }}
