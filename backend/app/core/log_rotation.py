@@ -35,7 +35,10 @@ def rotate_log_if_needed() -> None:
 
         try:
             # Re-check: another process may have rotated while we waited.
-            if not log_path.is_file() or log_path.stat().st_size < settings.LOG_MAX_BYTES:
+            if (
+                not log_path.is_file()
+                or log_path.stat().st_size < settings.LOG_MAX_BYTES
+            ):
                 return
             for i in range(settings.LOG_BACKUP_COUNT - 1, 0, -1):
                 src = log_path.with_name(f"{log_path.name}.{i}")
@@ -43,6 +46,8 @@ def rotate_log_if_needed() -> None:
                 if src.is_file():
                     src.replace(dst)
             log_path.replace(log_path.with_name(f"{log_path.name}.1"))
-            logger.info("rotated %s (exceeded %d bytes)", log_path, settings.LOG_MAX_BYTES)
+            logger.info(
+                "rotated %s (exceeded %d bytes)", log_path, settings.LOG_MAX_BYTES
+            )
         finally:
             fcntl.flock(lock_file, fcntl.LOCK_UN)

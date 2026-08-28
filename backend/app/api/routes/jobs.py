@@ -14,9 +14,7 @@ def create_job(session: SessionDep, body: JobCreate) -> Job:
     except ValueError as e:
         raise HTTPException(400, str(e))
     if job is None:
-        raise HTTPException(
-            409, f'A sync is already running for "{body.source_name}"'
-        )
+        raise HTTPException(409, f'A sync is already running for "{body.source_name}"')
     return job
 
 

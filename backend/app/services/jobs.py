@@ -144,9 +144,7 @@ class JobManager:
             raise KeyError(name)
         return self.test_connection(cfg.type, cfg.base_url, cfg.token)
 
-    def test_connection(
-        self, type: str, base_url: str, token: str
-    ) -> dict[str, Any]:
+    def test_connection(self, type: str, base_url: str, token: str) -> dict[str, Any]:
         logger.info("testing %s connection: %s", type, base_url)
         try:
             if type == "plex":
@@ -305,10 +303,7 @@ class JobManager:
     ) -> tuple[list[Job], int]:
         count = session.exec(select(func.count()).select_from(Job)).one()
         statement = (
-            select(Job)
-            .order_by(col(Job.created_at).desc())
-            .offset(skip)
-            .limit(limit)
+            select(Job).order_by(col(Job.created_at).desc()).offset(skip).limit(limit)
         )
         jobs = list(session.exec(statement).all())
         return jobs, count
@@ -513,7 +508,9 @@ class JobManager:
                     break
                 try:
                     info = svc.get_track_info(item)
-                    self._process_track(job_id, info, dry_run, write_mode, path_mappings)
+                    self._process_track(
+                        job_id, info, dry_run, write_mode, path_mappings
+                    )
                 except Exception as e:
                     self._bump(job_id, processed=1, errors=1)
                     logger.warning("[job %s] error (track fetch failed): %s", job_id, e)

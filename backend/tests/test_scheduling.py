@@ -16,9 +16,7 @@ def _naive(dt: datetime) -> datetime:
 
 @pytest.fixture
 def manager(monkeypatch):
-    engine = create_engine(
-        "sqlite://", connect_args={"check_same_thread": False}
-    )
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False})
     SQLModel.metadata.create_all(engine)
     monkeypatch.setattr(jobs_module, "engine", engine)
     manager = JobManager()
