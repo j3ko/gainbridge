@@ -1,13 +1,14 @@
 name: Playwright Tests
 
 on:
-  push:
-    branches:
-    - main
-  pull_request:
-    types:
-    - opened
-    - synchronize
+  # Manual only - frontend/tests/ doesn't have a suite for this to run yet
+  # (see frontend/README.md), so on push/pull_request it was running a full
+  # 4-way sharded docker compose build+test cycle for zero test coverage.
+  # It also failed inconsistently on GitHub's hosted runners specifically
+  # (not reproducible locally, even with a matched CI env var and a fresh,
+  # uncached Docker build) for reasons not yet root-caused - see PR #56.
+  # Re-add push/pull_request triggers once real specs exist and that's
+  # understood.
   workflow_dispatch:
     inputs:
       debug_enabled:
