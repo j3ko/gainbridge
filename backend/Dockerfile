@@ -42,4 +42,4 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 WORKDIR /app/backend/
 
-CMD ["fastapi", "run", "app/main.py"]
+CMD ["fastapi", "run", "--port", "9210", "app/main.py"]

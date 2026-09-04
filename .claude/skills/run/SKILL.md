@@ -7,35 +7,35 @@ description: Launch gainbridge's backend (FastAPI) and frontend (Vite/React) dev
 
 ## Dev servers
 
-Backend (FastAPI, port 8000). Run from `backend/` — `app/core/config.py`
+Backend (FastAPI, port 9210). Run from `backend/` — `app/core/config.py`
 loads `env_file="../.env"` relative to that cwd, so the repo-root `.env`
 is picked up automatically. No symlink or extra setup needed.
 
 ```bash
-cd backend && uv run fastapi dev app/main.py --port 8000
+cd backend && uv run fastapi dev app/main.py --port 9210
 ```
 
-Health check: `curl -sf http://localhost:8000/api/v1/utils/health-check/`
+Health check: `curl -sf http://localhost:9210/api/v1/utils/health-check/`
 
-Frontend (Vite, port 5173):
+Frontend (Vite, port 9220):
 
 ```bash
-cd frontend && bun run dev --port 5173
+cd frontend && bun run dev --port 9220
 ```
 
 Wait for both with polling, not `sleep`:
 
 ```bash
-timeout 30 bash -c 'until curl -sf http://localhost:8000/api/v1/utils/health-check/ >/dev/null; do sleep 1; done'
-timeout 30 bash -c 'until curl -sf http://localhost:5173 >/dev/null; do sleep 1; done'
+timeout 30 bash -c 'until curl -sf http://localhost:9210/api/v1/utils/health-check/ >/dev/null; do sleep 1; done'
+timeout 30 bash -c 'until curl -sf http://localhost:9220 >/dev/null; do sleep 1; done'
 ```
 
 Stop by killing the port's listener (not `pkill -f`, which can match the
 agent's own process):
 
 ```bash
-lsof -ti:8000 -sTCP:LISTEN | xargs -r kill
-lsof -ti:5173 -sTCP:LISTEN | xargs -r kill
+lsof -ti:9210 -sTCP:LISTEN | xargs -r kill
+lsof -ti:9220 -sTCP:LISTEN | xargs -r kill
 ```
 
 ## Driving the UI with Playwright
@@ -82,7 +82,7 @@ page.on("console", (msg) => {
   if (msg.type() === "error") console.log("[console:error]", msg.text())
 })
 
-await page.goto("http://localhost:5173", { waitUntil: "domcontentloaded" })
+await page.goto("http://localhost:9220", { waitUntil: "domcontentloaded" })
 await page.waitForSelector('button:has-text("Add Source")', { timeout: 15000 })
 await page.screenshot({ path: "/absolute/path/to/scratchpad/out.png" })
 

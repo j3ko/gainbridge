@@ -70,9 +70,9 @@ COPY --from=frontend-build /app/frontend/dist /app/backend/static
 
 WORKDIR /app/backend/
 
-EXPOSE 8000
+EXPOSE 9210
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8000/api/v1/utils/health-check/ || exit 1
+    CMD curl -f http://localhost:9210/api/v1/utils/health-check/ || exit 1
 
-CMD ["fastapi", "run", "app/main.py"]
+CMD ["fastapi", "run", "--port", "9210", "app/main.py"]
