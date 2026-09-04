@@ -6,19 +6,30 @@ on:
       - opened
       - synchronize
 
+permissions: {}
+
 env:
   # Forks and Dependabot don't have access to secrets
   HAS_SECRETS: ${{ secrets.PRE_COMMIT != '' }}
+  # Same as HAS_SECRETS, but also excludes Dependabot: it does have access to
+  # secrets (its PRs aren't forks), but a fixup commit pushed onto a
+  # dependabot/* branch by anyone other than dependabot[bot] itself can
+  # leave the PR's mergeable_state stuck (see docs/decisions/0010) - so
+  # Dependabot PRs still get checked and reported on, just never auto-pushed to.
+  CAN_PUSH: ${{ secrets.PRE_COMMIT != '' && github.actor != 'dependabot[bot]' }}
 
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
     steps:
       - name: Dump GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 # zizmor: ignore[artipacked] -- persist-credentials is deliberately left on; the "Commit and push changes" step below needs this checkout's credential helper to push with the PRE_COMMIT token
         name: Checkout PR for own repo
         if: env.HAS_SECRETS == 'true'
         with:
@@ -30,27 +41,33 @@ jobs:
           # A token other than the default GITHUB_TOKEN is needed to be able to trigger CI
           token: ${{ secrets.PRE_COMMIT }}
       # pre-commit lite ci needs the default checkout configs to work
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         name: Checkout PR for fork
         if: env.HAS_SECRETS == 'false'
         with:
         # To be able to commit it needs the head branch of the PR, the remote one
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      - uses: oven-sh/setup-bun@v2
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
       - name: Set up Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.11"
+          python-version-file: .python-version
       - name: Setup uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
         with:
           cache-dependency-glob: |
             requirements**.txt
             pyproject.toml
             uv.lock
+      # --frozen: release-please's version-bump PRs change backend/pyproject.toml's
+      # version, which uv.lock also tracks for the local `app` package. An
+      # unfrozen `uv sync`/`uv run` silently re-locks to fix that drift as a
+      # side effect, which prek then reports as a spurious hook failure (a
+      # file it didn't ask about changed) - see docs/decisions/0011.
       - name: Install backend dependencies
-        run: uv sync --all-packages
+        run: uv sync --frozen --all-packages
       - name: Install frontend dependencies
         run: bun ci
       - name: Run prek - pre-commit
@@ -58,7 +75,7 @@ jobs:
         run: uvx prek run --from-ref origin/${GITHUB_BASE_REF} --to-ref HEAD --show-diff-on-failure
         continue-on-error: true
       - name: Commit and push changes
-        if: env.HAS_SECRETS == 'true'
+        if: env.CAN_PUSH == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -69,7 +86,7 @@ jobs:
             git commit -m "🎨 Auto format and update with pre-commit"
             git push
           fi
-      - uses: pre-commit-ci/lite-action@v1.1.0
+      - uses: pre-commit-ci/lite-action@5d6cc0eb514c891a40562a58a8e71576c5c7fb43 # v1.1.0
         if: env.HAS_SECRETS == 'false'
         with:
           msg: 🎨 Auto format and update with pre-commit
@@ -83,12 +100,13 @@ jobs:
     needs:
       - pre-commit
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Dump GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"
       - name: Decide whether the needed jobs succeeded or failed
-        uses: re-actors/alls-green@release/v1
+        uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # v1.3.0
         with:
           jobs: ${{ toJSON(needs) }}
