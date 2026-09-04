@@ -7,9 +7,7 @@ from pathlib import Path
 
 import sentry_sdk
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
 from fastapi.routing import APIRoute
-from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
@@ -78,11 +76,9 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 # Serves the built frontend when bundled alongside the backend in the
 # published single-image release; absent (and a no-op) in local dev, where
-# the frontend runs as its own container/dev server.
+# the frontend runs as its own container/dev server. check_dir defaults to
+# "auto" (raises if missing, unless FASTAPI_ENV=development), but the
+# is_dir() guard above already makes that redundant here.
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 if STATIC_DIR.is_dir():
-    app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="assets")
-
-    @app.get("/{full_path:path}", tags=["spa"], include_in_schema=False)
-    async def spa(full_path: str) -> FileResponse:  # noqa: ARG001
-        return FileResponse(STATIC_DIR / "index.html")
+    app.frontend("/", directory=STATIC_DIR)
