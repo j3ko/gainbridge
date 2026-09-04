@@ -24,9 +24,15 @@ jobs:
   # bucket - only feat/fix/docs/perf are renamed (to match existing/clearer
   # label names), everything else uses its literal type as the label.
   # Skipped for dependabot, which already gets its labels straight from
-  # dependabot.yml and doesn't use conventional titles.
+  # dependabot.yml and doesn't use conventional titles. Keyed off the PR's
+  # own branch, not the actor of the triggering push - a human pushing a
+  # follow-up fixup commit to a dependabot/* branch (actor != dependabot[bot])
+  # must still skip this, since the PR's title itself is still dependabot's
+  # non-conventional one. Getting this wrong previously kept the PR's
+  # mergeable_state at "unstable" indefinitely, which blocked Dependabot's
+  # own auto-close-when-superseded logic even for an otherwise-empty diff.
   pr-title-labeler:
-    if: ${{ github.actor != 'dependabot[bot]' && github.event.action != 'labeled' && github.event.action != 'unlabeled' }}
+    if: ${{ !startsWith(github.head_ref, 'dependabot/') && github.event.action != 'labeled' && github.event.action != 'unlabeled' }}
     permissions:
       contents: read
       pull-requests: write
