@@ -15,7 +15,7 @@
 	// "features": {},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [8000, 5173],
+	"forwardPorts": [9210, 9220],
 
 	// Bind-mount the host's ~/.claude so Claude Code's config/auth/memory survive container rebuilds.
 	"mounts": [

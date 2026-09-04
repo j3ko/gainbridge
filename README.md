@@ -52,9 +52,9 @@ docker compose watch
 
 Then open:
 
-- Frontend: <http://localhost:5173>
-- Backend API: <http://localhost:8000>
-- Interactive API docs: <http://localhost:8000/docs>
+- Frontend: <http://localhost:9220>
+- Backend API: <http://localhost:9210>
+- Interactive API docs: <http://localhost:9210/docs>
 
 From there, add a Plex or Jellyfin source with its server URL and an API token, optionally scope it to one library and set a sync schedule, and run a sync.
 
@@ -71,7 +71,7 @@ Use `:edge` instead of `:latest` to track the tip of `main` between releases.
 ```bash
 docker run -d \
   --name gainbridge \
-  -p 8000:8000 \
+  -p 9210:9210 \
   -v ./data:/app/data \
   -v /path/to/music:/music \
   -v /etc/localtime:/etc/localtime:ro \
