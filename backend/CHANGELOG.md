@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.1](https://github.com/j3ko/gainbridge/compare/v0.2.0...v0.2.1) (2026-09-04)
+
+
+### Reverts
+
+* changelog-path can't escape the package directory ([#53](https://github.com/j3ko/gainbridge/issues/53)) ([44725ea](https://github.com/j3ko/gainbridge/commit/44725ea047a2defc61a0e1ca3d1804fb15c01e0a))
+
+
+### Documentation
+
+* explain why FastAPI's version isn't wired to the package version ([#52](https://github.com/j3ko/gainbridge/issues/52)) ([c52ded3](https://github.com/j3ko/gainbridge/commit/c52ded3a929dfc25936de5a447ff10e723267664))
+
 ## [0.2.0](https://github.com/j3ko/gainbridge/compare/v0.1.1...v0.2.0) (2026-08-28)
 
 
