@@ -70,7 +70,7 @@ jobs:
       with:
         limit-access-to-actor: true
     - name: Install uv
-      uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
     # --frozen: see docs/decisions/0011 - avoids an unfrozen `uv` invocation
     # silently re-locking uv.lock when backend/pyproject.toml's version has
     # drifted (e.g. a pending release-please bump).
