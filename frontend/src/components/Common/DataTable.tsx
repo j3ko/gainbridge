@@ -1,12 +1,15 @@
 import {
-  type ColumnDef,
   flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
   type OnChangeFn,
   type PaginationState,
-  useReactTable,
+  type RowData,
 } from "@tanstack/react-table"
+import {
+  getCoreRowModel,
+  getPaginationRowModel,
+  type LegacyColumnDef,
+  useLegacyTable,
+} from "@tanstack/react-table/legacy"
 import {
   ChevronLeft,
   ChevronRight,
@@ -31,8 +34,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
+interface DataTableProps<TData extends RowData, TValue> {
+  columns: LegacyColumnDef<TData, TValue>[]
   data: TData[]
   // Server-side pagination: pass all three to have `data` treated as just
   // the current page (fetched with `pagination`'s pageIndex/pageSize) and
@@ -43,7 +46,7 @@ interface DataTableProps<TData, TValue> {
   rowCount?: number
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends RowData, TValue>({
   columns,
   data,
   pagination,
@@ -52,17 +55,23 @@ export function DataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
   const manualPagination =
     pagination !== undefined && onPaginationChange !== undefined
-  const table = useReactTable({
+  const table = useLegacyTable({
     data,
-    columns,
+    // v9's useLegacyTable expects TValue=unknown; DataTable is a generic
+    // wrapper that only ever passes columns straight through, so narrowing
+    // TValue here can't hide a real type error at this call site.
+    columns: columns as LegacyColumnDef<TData, unknown>[],
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: manualPagination
       ? undefined
       : getPaginationRowModel(),
     manualPagination,
     rowCount: manualPagination ? rowCount : undefined,
-    state: manualPagination ? { pagination } : undefined,
-    onPaginationChange,
+    // Passing an explicit `onPaginationChange: undefined` (rather than
+    // omitting the key) clobbers useLegacyTable's own internal pagination
+    // handler, so next/prev/etc. silently stop updating state. Only include
+    // it — along with controlled `state` — in the manual-pagination case.
+    ...(manualPagination ? { state: { pagination }, onPaginationChange } : {}),
   })
 
   const totalCount = manualPagination ? (rowCount ?? 0) : data.length

@@ -1,11 +1,11 @@
-import type { ColumnDef } from "@tanstack/react-table"
+import type { LegacyColumnDef } from "@tanstack/react-table/legacy"
 
 import type { SourcePublic } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { SourceActionsMenu } from "./SourceActionsMenu"
 
-export const columns: ColumnDef<SourcePublic>[] = [
+export const columns: LegacyColumnDef<SourcePublic>[] = [
   {
     accessorKey: "name",
     header: "Name",
