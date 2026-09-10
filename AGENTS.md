@@ -49,6 +49,17 @@ files. It's a personal, self-hosted tool for one user's library — favor simpli
   Hub — see `docs/decisions/0003`.
 - The FastAPI app's version is deliberately not wired to the OpenAPI schema (`docs/decisions/0008`)
   — don't reintroduce that coupling.
+- Every `uv run`/`uv sync` in CI (and in `.pre-commit-config.yaml`) passes `--frozen`
+  (`docs/decisions/0011`) — an unfrozen one silently re-locks `uv.lock` the moment
+  `backend/pyproject.toml`'s version has drifted from it (e.g. a pending release-please bump),
+  which `prek` then reports as a spurious hook failure unrelated to whatever it was actually
+  checking. Keep new `uv` invocations in CI frozen too.
+- GitHub Actions workflows are pinned to full commit SHAs (not floating tags), scoped to minimal
+  `permissions:`, and checked by `zizmor.yml` on every push/PR (`docs/decisions/0012`) — follow the
+  same `# vX.Y.Z` version-comment convention for any new action reference.
+- Only repository collaborators or Dependabot may open a PR touching a dependency file
+  (`pyproject.toml`, `uv.lock`, `package.json`, `bun.lock`) — `guard-dependencies.yml` auto-closes
+  anyone else's.
 - Dependabot never regenerates the frontend client. A `fastapi`/`pydantic` bump can change the
   OpenAPI schema without anyone running `scripts/generate-client.sh`; the committed
   `frontend/src/client/*.gen.ts` goes stale, and only the `generate-frontend-sdk` pre-commit hook

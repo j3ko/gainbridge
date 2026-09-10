@@ -1,2 +1,7 @@
 [tool.uv.workspace]
 members = ["backend"]
+
+[dependency-groups]
+github-actions = [
+    "smokeshow>=0.5.0",
+]

@@ -1,4 +1,4 @@
-import type { ColumnDef } from "@tanstack/react-table"
+import type { LegacyColumnDef } from "@tanstack/react-table/legacy"
 
 import type { JobPublic } from "@/client"
 import CancelJob from "@/components/Jobs/CancelJob"
@@ -20,7 +20,7 @@ const statusVariant: Record<
   cancelled: "secondary",
 }
 
-export const columns: ColumnDef<JobPublic>[] = [
+export const columns: LegacyColumnDef<JobPublic>[] = [
   {
     accessorKey: "source_name",
     header: "Source",
