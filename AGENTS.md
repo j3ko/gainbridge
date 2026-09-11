@@ -35,6 +35,9 @@ files. It's a personal, self-hosted tool for one user's library — favor simpli
 
 ## Decision records
 
+- At the start of every session, read every file in `docs/decisions/` — they're one page each, so
+  this is cheap, and they contain facts that matter even for tasks that don't look architectural on
+  the surface.
 - Any real design/architecture decision (removing a template feature, a concurrency or migration
   fix, a CI/config choice that failed and was reverted, etc.) gets a short ADR in
   `docs/decisions/NNNN-title.md`.
