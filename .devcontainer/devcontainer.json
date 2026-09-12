@@ -8,7 +8,8 @@
 		"ghcr.io/devcontainers/features/node:2": {},
 		"ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {},
 		"ghcr.io/devcontainers-extra/features/uv:1": {},
-		"ghcr.io/devcontainers-extra/features/bun:1": {}
+		"ghcr.io/devcontainers-extra/features/bun:1": {},
+		"ghcr.io/devcontainers/features/github-cli:1": {}
 	},
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
@@ -17,9 +18,13 @@
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	"forwardPorts": [9210, 9220],
 
-	// Bind-mount the host's ~/.claude so Claude Code's config/auth/memory survive container rebuilds.
+	// Bind-mount the host's ~/.claude so Claude Code's config/auth/memory survive container
+	// rebuilds, and the host's ~/.config/gh so `gh` is already authenticated in the container
+	// too, using whatever auth the host's own `gh auth login` already set up - no token ever
+	// needs to touch the repo or a chat session.
 	"mounts": [
-		"source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached"
+		"source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
+		"source=${localEnv:HOME}/.config/gh,target=/home/vscode/.config/gh,type=bind,consistency=cached"
 	],
 
 	// Install Playwright's Chromium build + its system deps once at container creation,

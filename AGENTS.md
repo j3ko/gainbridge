@@ -92,10 +92,10 @@ files. It's a personal, self-hosted tool for one user's library — favor simpli
   human pushed a follow-up commit to it, which in turn blocked Dependabot's auto-close. If any
   other dependabot-adjacent workflow condition gets added later, key it off the branch the same
   way, not the actor.
-- No `gh` CLI or GitHub API token is available in the agent sandbox, only SSH git access
-  (clone/fetch/push). Reads against the public REST API work unauthenticated
-  (`curl api.github.com/...`); anything needing auth (closing/merging PRs via API, downloading raw
-  Action job logs) doesn't.
+- The devcontainer bind-mounts the host's `~/.config/gh`, so `gh` is authenticated in the agent
+  sandbox using whatever auth the host's own `gh auth login` already set up — no token touches the
+  repo or a chat session. Actions needing auth (closing/merging PRs via API, downloading raw Action
+  job logs) work through `gh`, not raw unauthenticated `curl api.github.com/...`.
 
 ## Concurrency
 
