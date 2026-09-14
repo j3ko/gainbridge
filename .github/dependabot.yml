@@ -52,6 +52,8 @@ updates:
     labels: [dependencies, internal]
     ignore:
       - dependency-name: "@hey-api/openapi-ts"
+      - dependency-name: "typescript"
+        versions: [">=7"]
     groups:
       npm-packages:
         patterns:
