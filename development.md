@@ -101,6 +101,10 @@ You can find a file `.pre-commit-config.yaml` with configurations at the root of
 
 #### Install prek to run automatically
 
+If you're using the devcontainer, this is already done for you — its `postCreateCommand` runs
+`prek install` on every container create/rebuild. The steps below are only needed if you're
+working outside the devcontainer, or want to reinstall the hook manually.
+
 `prek` is already part of the dependencies of the project.
 
 After having the `prek` tool installed and available, you need to "install" it in the local repository, so that it runs automatically before each commit.

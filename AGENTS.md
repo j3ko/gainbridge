@@ -35,6 +35,9 @@ files. It's a personal, self-hosted tool for one user's library — favor simpli
 
 ## Decision records
 
+- At the start of every session, read every file in `docs/decisions/` — they're one page each, so
+  this is cheap, and they contain facts that matter even for tasks that don't look architectural on
+  the surface.
 - Any real design/architecture decision (removing a template feature, a concurrency or migration
   fix, a CI/config choice that failed and was reverted, etc.) gets a short ADR in
   `docs/decisions/NNNN-title.md`.
@@ -89,10 +92,10 @@ files. It's a personal, self-hosted tool for one user's library — favor simpli
   human pushed a follow-up commit to it, which in turn blocked Dependabot's auto-close. If any
   other dependabot-adjacent workflow condition gets added later, key it off the branch the same
   way, not the actor.
-- No `gh` CLI or GitHub API token is available in the agent sandbox, only SSH git access
-  (clone/fetch/push). Reads against the public REST API work unauthenticated
-  (`curl api.github.com/...`); anything needing auth (closing/merging PRs via API, downloading raw
-  Action job logs) doesn't.
+- The devcontainer bind-mounts the host's `~/.config/gh`, so `gh` is authenticated in the agent
+  sandbox using whatever auth the host's own `gh auth login` already set up — no token touches the
+  repo or a chat session. Actions needing auth (closing/merging PRs via API, downloading raw Action
+  job logs) work through `gh`, not raw unauthenticated `curl api.github.com/...`.
 
 ## Concurrency
 

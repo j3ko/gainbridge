@@ -22,6 +22,7 @@ repos:
       - id: local-biome-check
         name: biome check
         entry: bun run --filter frontend format
+        pass_filenames: false
         language: system
         types: [text]
         files: ^frontend/
