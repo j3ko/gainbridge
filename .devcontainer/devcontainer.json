@@ -29,8 +29,10 @@
 
 	// Install Playwright's Chromium build + its system deps once at container creation,
 	// so browser-driven checks (e.g. Playwright tests, or an agent verifying the UI) don't
-	// need to install anything on demand.
-	"postCreateCommand": "cd frontend && bunx playwright install --with-deps chromium"
+	// need to install anything on demand. Then install the prek git hook so lint/format is
+	// enforced on every commit automatically, rather than depending on a developer running
+	// `uv run prek install` by hand (see development.md).
+	"postCreateCommand": "cd frontend && bunx playwright install --with-deps chromium && cd .. && uv run --frozen prek install"
 
 	// Configure tool-specific properties.
 	// "customizations": {},
