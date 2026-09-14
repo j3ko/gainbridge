@@ -32,10 +32,18 @@
 	// need to install anything on demand. Then install the prek git hook so lint/format is
 	// enforced on every commit automatically, rather than depending on a developer running
 	// `uv run prek install` by hand (see development.md).
-	"postCreateCommand": "cd frontend && bunx playwright install --with-deps chromium && cd .. && uv run --frozen prek install"
+	"postCreateCommand": "cd frontend && bunx playwright install --with-deps chromium && cd .. && uv run --frozen prek install",
 
-	// Configure tool-specific properties.
-	// "customizations": {},
+	// Pinned explicitly after ms-python.debugpy failed to auto-install once in a
+	// fresh container (a sibling polygraph project's devcontainer, not this one) -
+	// ms-python.python normally pulls it in as an extension-pack dependency, but
+	// that's not guaranteed. This makes provisioning deterministic across rebuilds
+	// instead of relying on that implicit install.
+	"customizations": {
+		"vscode": {
+			"extensions": ["ms-python.python", "ms-python.vscode-pylance", "ms-python.debugpy"]
+		}
+	}
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
