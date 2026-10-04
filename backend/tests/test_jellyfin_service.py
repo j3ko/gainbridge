@@ -8,7 +8,7 @@ def _service(handler, base_url="http://jf", api_key="key"):
     service = JellyfinService(base_url, api_key)
     service._client = httpx.Client(
         base_url=service.base_url,
-        headers={"X-Emby-Token": api_key, "Accept": "application/json"},
+        headers=service._client.headers,
         transport=httpx.MockTransport(handler),
     )
     return service
@@ -172,13 +172,36 @@ def test_get_track_info_falls_back_to_album_artist():
     assert info.artist == "Solo"
 
 
+def test_requests_send_authorization_header():
+    seen = {}
+
+    def handler(request):
+        seen.update(request.headers)
+        return httpx.Response(200, json={})
+
+    service = _service(handler, api_key="secret")
+    service._get("/anything")
+    assert seen["authorization"] == 'MediaBrowser Token="secret"'
+    assert "x-emby-token" not in seen
+
+
 def test_test_connection_returns_server_info():
-    def handler(_request):
+    paths = []
+
+    def handler(request):
+        paths.append(request.url.path)
         return httpx.Response(200, json={"ServerName": "Home", "Version": "10.9.0"})
 
     service = _service(handler)
     result = service.test_connection()
     assert result == {"ok": True, "server_name": "Home", "version": "10.9.0"}
+    assert paths == ["/System/Info"]
+
+
+def test_test_connection_fails_on_rejected_token():
+    service = _service(lambda _request: httpx.Response(401))
+    with pytest.raises(httpx.HTTPStatusError):
+        service.test_connection()
 
 
 def test_close_closes_underlying_client():

@@ -19,8 +19,11 @@ class JellyfinService:
         logger.info("jellyfin: connecting to %s", self.base_url)
         self._client = httpx.Client(
             base_url=self.base_url,
+            # Jellyfin 12 rejects the legacy X-Emby-Token header and api_key
+            # query param with a 401; the Authorization header works on every
+            # version.
             headers={
-                "X-Emby-Token": api_key,
+                "Authorization": f'MediaBrowser Token="{api_key}"',
                 "Accept": "application/json",
             },
             timeout=60.0,
@@ -123,7 +126,9 @@ class JellyfinService:
         )
 
     def test_connection(self) -> dict[str, Any]:
-        info = self._get("/System/Info/Public")
+        # /System/Info requires auth (unlike /System/Info/Public), so a rejected
+        # token fails the test instead of reporting ok.
+        info = self._get("/System/Info")
         logger.info(
             "jellyfin: connection test succeeded for %s (server=%s, version=%s)",
             self.base_url,
