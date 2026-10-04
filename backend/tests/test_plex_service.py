@@ -197,10 +197,39 @@ def test_extract_loudness_full_values(monkeypatch):
     track = _FakeTrack(media=[_FakeMedia(parts=[_FakePart(streams=[stream])])])
     loudness = service._extract_loudness(track)
     assert loudness is not None
-    assert loudness.track_gain_db == -6.0
+    # Track gain is derived from loudness (-18 - -14), not the stream's `gain`.
+    assert loudness.track_gain_db == -4.0
     assert loudness.album_gain_db == -7.0
     assert loudness.loudness_lufs == -14.0
     assert loudness.lra == 5.0
+
+
+def test_extract_loudness_ignores_album_gain_reported_as_gain(monkeypatch):
+    # Real values from a Plex album where every track's `gain` equals `albumGain`
+    # (-11.39), while the per-track `loudness` differs.
+    service = _service(monkeypatch, _FakeServer())
+    stream = _FakeStream(
+        gain="-11.39",
+        peak="0.979126",
+        albumGain="-11.39",
+        albumPeak="1.0",
+        loudness="-7.54",
+    )
+    track = _FakeTrack(media=[_FakeMedia(parts=[_FakePart(streams=[stream])])])
+    loudness = service._extract_loudness(track)
+    assert loudness is not None
+    assert loudness.track_gain_db == -10.46
+    assert loudness.track_peak == 0.979126
+    assert loudness.album_gain_db == -11.39
+
+
+def test_extract_loudness_falls_back_to_gain_without_loudness(monkeypatch):
+    service = _service(monkeypatch, _FakeServer())
+    stream = _FakeStream(gain="-6.0", loudness=None)
+    track = _FakeTrack(media=[_FakeMedia(parts=[_FakePart(streams=[stream])])])
+    loudness = service._extract_loudness(track)
+    assert loudness is not None
+    assert loudness.track_gain_db == -6.0
 
 
 def test_extract_loudness_swallows_unexpected_errors(monkeypatch):

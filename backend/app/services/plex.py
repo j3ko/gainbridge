@@ -12,7 +12,10 @@ from app.schemas.gain import LibraryInfo, LoudnessInfo, TrackInfo
 logger = logging.getLogger(__name__)
 
 # Plex stores gain relative to its own reference (~-18 LUFS ReplayGain 2.0 style).
-# The `gain` / `albumGain` fields on the audio stream are already in dB.
+# The `gain` / `albumGain` fields on the audio stream are already in dB, but the
+# stream's `gain` is actually the album gain (identical to `albumGain` on every
+# track of an album), so track gain is derived from the per-track `loudness`.
+REFERENCE_LUFS = -18.0
 
 
 class PlexService:
@@ -76,8 +79,14 @@ class PlexService:
             if gain is None and loudness is None:
                 return None
 
+            track_gain: float | None = None
+            if loudness is not None:
+                track_gain = round(REFERENCE_LUFS - float(loudness), 2)
+            elif gain is not None:
+                track_gain = float(gain)
+
             return LoudnessInfo(
-                track_gain_db=float(gain) if gain is not None else None,
+                track_gain_db=track_gain,
                 track_peak=float(peak) if peak is not None else None,
                 album_gain_db=float(album_gain) if album_gain is not None else None,
                 album_peak=float(album_peak) if album_peak is not None else None,
