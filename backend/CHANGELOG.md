@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.2](https://github.com/j3ko/gainbridge/compare/v0.2.1...v0.2.2) (2026-10-04)
+
+
+### Bug Fixes
+
+* authenticate to Jellyfin with the Authorization header ([#104](https://github.com/j3ko/gainbridge/issues/104)) ([bd1e671](https://github.com/j3ko/gainbridge/commit/bd1e6719c5388abe6ccc4f241b415e49c6c8766a))
+* derive Plex track gain from per-track loudness ([bf7473d](https://github.com/j3ko/gainbridge/commit/bf7473d7c6c7bb30eaa05e2e9989507ae26153c7))
+* resolve mypy errors from the SQLModel 0.0.47 bump ([#105](https://github.com/j3ko/gainbridge/issues/105)) ([71bc580](https://github.com/j3ko/gainbridge/commit/71bc5805c6543527a23c3ec8d193a1789638e286))
+
 ## [0.2.1](https://github.com/j3ko/gainbridge/compare/v0.2.0...v0.2.1) (2026-09-04)
 
 
