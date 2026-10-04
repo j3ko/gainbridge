@@ -83,7 +83,11 @@ class PathMappingBase(SQLModel):
 
 class PathMapping(PathMappingBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    source_id: int = Field(foreign_key="source.id", index=True)
+    # Optional in Python because it's filled in by the `source.path_mappings`
+    # relationship on flush, not at construction; the column stays NOT NULL.
+    source_id: int | None = Field(
+        default=None, foreign_key="source.id", index=True, nullable=False
+    )
     source: Source = Relationship(back_populates="path_mappings")
 
 
