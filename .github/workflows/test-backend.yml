@@ -33,6 +33,9 @@ jobs:
       # unfrozen `uv run` silently re-locks to fix that drift as a side effect,
       # which prek/pre-commit then reports as a spurious failure elsewhere
       # (see docs/decisions/0011). Frozen here too so this job never does it.
+      - name: Type check
+        run: uv run --frozen mypy app
+        working-directory: backend
       - name: Migrate DB
         run: uv run --frozen bash scripts/prestart.sh
         working-directory: backend
