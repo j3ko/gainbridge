@@ -25,7 +25,7 @@ def list_jobs(
     limit: int = Query(default=50, ge=1, le=500),
 ) -> JobsPublic:
     jobs, count = job_manager.list_jobs(session, skip=skip, limit=limit)
-    return JobsPublic(data=jobs, count=count)
+    return JobsPublic(data=[JobPublic.model_validate(j) for j in jobs], count=count)
 
 
 @router.get("/log", response_model=JobLog)
