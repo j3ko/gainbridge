@@ -30,12 +30,9 @@
 		"source=${localEnv:HOME}/.config/gh,target=/home/vscode/.config/gh,type=bind,consistency=cached"
 	],
 
-	// Install Playwright's Chromium build + its system deps once at container creation,
-	// so browser-driven checks (e.g. Playwright tests, or an agent verifying the UI) don't
-	// need to install anything on demand. Then install the prek git hook so lint/format is
-	// enforced on every commit automatically, rather than depending on a developer running
-	// `uv run prek install` by hand (see development.md).
-	"postCreateCommand": "cd frontend && bunx playwright install --with-deps chromium && cd .. && uv run --frozen prek install",
+	// Patch the trust stores the base image may lag on, install Playwright's Chromium,
+	// then the prek git hook. See the script.
+	"postCreateCommand": "bash .devcontainer/post-create.sh",
 
 	// Pinned explicitly after ms-python.debugpy failed to auto-install once in a
 	// fresh container (a sibling polygraph project's devcontainer, not this one) -
