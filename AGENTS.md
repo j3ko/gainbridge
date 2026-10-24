@@ -29,8 +29,8 @@ Read on demand, not up front:
 
 ## Working with the owner
 
-- **Open PRs; don't merge them** unless asked explicitly. Never commit or push without being
-  asked.
+- **Open PRs without asking; don't merge them** unless asked explicitly. The PR is the
+  review. Never commit or push to `main` directly.
 - **Keep to the scope that was asked for.** Anything worth adding beyond it becomes a
   `proposal` issue and a line in the PR description or reply; don't fold it in quietly.
 - **Repo settings are the owner's call:** rulesets, merge styles, secrets, labels, Docker
