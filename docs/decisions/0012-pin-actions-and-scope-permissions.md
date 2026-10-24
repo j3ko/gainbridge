@@ -23,9 +23,8 @@ runtime than it needs, since any one of them running attacker-controlled code (a
 action, a malicious PR in a `pull_request_target` context) has a correspondingly smaller blast
 radius.
 
-Noticed by comparing against a sibling project, which already does all of this consistently -
-zizmor is almost certainly why: it flags exactly these patterns, so once it's running, drifting
-back into unpinned/over-privileged workflows gets caught immediately instead of accumulating.
+zizmor keeps it that way: it flags exactly these patterns, so once it's running, drifting back
+into unpinned/over-privileged workflows gets caught immediately instead of accumulating.
 
 ## Consequence
 

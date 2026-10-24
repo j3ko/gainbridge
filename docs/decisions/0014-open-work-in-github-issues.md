@@ -4,7 +4,7 @@ Date: 2026-10-24
 
 ## Decision
 
-Decided by the owner on 2026-10-24, following the sibling project polymarket-trader.
+Decided by the owner on 2026-10-24.
 
 - **Open work is a GitHub issue,** one per item, with one or more of five labels:
   - `next`: work to pick up, in progress or next;
