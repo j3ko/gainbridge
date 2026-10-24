@@ -4,6 +4,10 @@ version = "0.2.2"
 description = ""
 requires-python = ">=3.10,<4.0"
 dependencies = [
+    # httpx (Jellyfin) and plexapi's requests (Plex, plex.tv) trust certifi's roots.
+    # 2026.10.19 drops "emSign ECC Root CA - G3", whose intermediates' private keys are
+    # guessable (the eMudhra/emSign incident, 2026-10).
+    "certifi>=2026.10.19",
     "fastapi[standard]>=0.141.1,<1.0.0",
     "tenacity>=9.1.4,<10.0.0",
     "pydantic>=2.13.5",
