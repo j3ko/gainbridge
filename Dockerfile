@@ -27,7 +27,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Install uv
 # Ref: https://docs.astral.sh/uv/guides/integration/docker/#installing-uv
-COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.13.5 /uv /uvx /bin/
 
 # Compile bytecode
 # Ref: https://docs.astral.sh/uv/guides/integration/docker/#compiling-bytecode
@@ -37,7 +37,9 @@ ENV UV_COMPILE_BYTECODE=1
 # Ref: https://docs.astral.sh/uv/guides/integration/docker/#caching
 ENV UV_LINK_MODE=copy
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
+# ca-certificates: also upgrades the base image's copy, which can lag behind security
+# fixes (Debian's 20250419+deb13u1 drops the emSign ECC Root CA - G3, 2026-10).
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app/
