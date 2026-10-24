@@ -2,7 +2,6 @@ import logging
 import threading
 
 import pytest
-from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
 from app.models import Job, JobCreate, Source
@@ -12,14 +11,14 @@ from app.services.jobs import JobManager
 
 
 @pytest.fixture
-def manager(monkeypatch):
-    # StaticPool: an in-memory sqlite db is otherwise per-connection, so the
-    # real executor worker thread used by the shutdown/cancellation tests
-    # would see an empty database without a single shared connection.
+def manager(monkeypatch, tmp_path):
+    # A file-backed db, like production: the shutdown/cancellation tests run a
+    # real executor worker thread, and an in-memory db would need StaticPool's
+    # single shared connection, where a main-thread session's rollback can
+    # discard the worker's uncommitted counter bump.
     engine = create_engine(
-        "sqlite://",
+        f"sqlite:///{tmp_path / 'test.db'}",
         connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
     )
     SQLModel.metadata.create_all(engine)
     monkeypatch.setattr(jobs_module, "engine", engine)
