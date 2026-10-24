@@ -34,10 +34,9 @@
 	// then the prek git hook. See the script.
 	"postCreateCommand": "bash .devcontainer/post-create.sh",
 
-	// Pinned explicitly after ms-python.debugpy failed to auto-install once in a
-	// fresh container (a sibling polygraph project's devcontainer, not this one) -
-	// ms-python.python normally pulls it in as an extension-pack dependency, but
-	// that's not guaranteed. This makes provisioning deterministic across rebuilds
+	// Pinned explicitly because ms-python.debugpy can fail to auto-install in a fresh
+	// container - ms-python.python normally pulls it in as an extension-pack dependency,
+	// but that's not guaranteed. This makes provisioning deterministic across rebuilds
 	// instead of relying on that implicit install.
 	"customizations": {
 		"vscode": {
