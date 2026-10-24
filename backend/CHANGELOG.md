@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/j3ko/gainbridge/compare/v0.2.2...v0.2.3) (2026-10-24)
+
+
+### Bug Fixes
+
+* require certifi 2026.10.19 or later, without the emSign G3 root ([#112](https://github.com/j3ko/gainbridge/issues/112)) ([babb23b](https://github.com/j3ko/gainbridge/commit/babb23b73eecb739a7de5684daa4e2e08d35a169))
+
 ## [0.2.2](https://github.com/j3ko/gainbridge/compare/v0.2.1...v0.2.2) (2026-10-04)
 
 
