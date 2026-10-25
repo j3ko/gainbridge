@@ -61,6 +61,7 @@ updates:
   # Docker
   - package-ecosystem: docker
     directories:
+      - /
       - /backend
       - /frontend
     schedule:
