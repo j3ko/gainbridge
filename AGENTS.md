@@ -29,8 +29,10 @@ Read on demand, not up front:
 
 ## Working with the owner
 
-- **Open PRs without asking; don't merge them** unless asked explicitly. The PR is the
-  review. Never commit or push to `main` directly.
+- **Open PRs; don't merge them** unless asked explicitly. Once asked to make a change,
+  finish it on a branch and open the PR, without first asking for a review of the working
+  branch or permission to open it: the PR is the review. During planning or discussion,
+  open nothing until asked. Never commit or push to `main` directly.
 - **Keep to the scope that was asked for.** Anything worth adding beyond it becomes a
   `proposal` issue and a line in the PR description or reply; don't fold it in quietly.
 - **Repo settings are the owner's call:** rulesets, merge styles, secrets, labels, Docker
