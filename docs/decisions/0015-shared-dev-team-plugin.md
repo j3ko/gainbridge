@@ -20,13 +20,13 @@ sessions survive rebuilds, and the extension is declared pinned to
 `openai.chatgpt@26.930.61225`. Playwright's one-off CLI in post-create is pinned to
 `1.64.1`, the version `frontend/package.json` locks.
 
-The owner's other devcontainers use the same setup, so they stay consistent. It amends ADR 0014's delegation line.
+It amends ADR 0014's delegation line.
 
 ## Why
 
 One maintained source for the workflow and its three roles, instead of diverging Claude
-and Codex instructions. In the owner's devcontainers, Codex's bubblewrap sandbox can't
-create namespaces (`EPERM` under Docker's AppArmor/seccomp confinement), and OpenAI supports a
+and Codex instructions. Codex's bubblewrap sandbox was seen failing to create namespaces
+in this kind of devcontainer (`EPERM` under Docker's AppArmor/seccomp confinement), and OpenAI supports a
 dev container as the outer boundary when the inner sandbox can't run. Newer builds of the
 Codex extension failed to start in the devcontainer on 2026-11-05; `26.930.61225` is the
 last one verified working. Playwright's one-off CLI is pinned
