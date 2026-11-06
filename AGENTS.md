@@ -22,8 +22,8 @@ only the ADRs its spec names, not the index.
 
 Read on demand, not up front:
 
-- `docs/ci-notes.md` — when touching `.github/`, `.circleci/`, a Dependabot PR, a lockfile
-  or a Docker build.
+- `docs/ci-notes.md` — when touching `.github/`, `.circleci/`, `.devcontainer/`, a Dependabot
+  PR, a lockfile or a Docker build.
 - `development.md` — local dev setup, Docker Compose, ports (backend 9210, frontend 9220).
 - The `run` skill — to launch the app or verify a change end to end in a browser.
 
@@ -41,12 +41,19 @@ Read on demand, not up front:
 ## How work is split
 
 The main session keeps design, ADR decisions and the discussion with the owner, and
-delegates detail through the **dev-team** plugin (`dev-team@j3ko`, from `j3ko/claude-plugins`,
-enabled in `.claude/settings.json`). Load `/dev-team:orchestrate` before delegating. The
-agents: `dev-team:implementer` (one spec, own worktree, opens the PR; `model: haiku` for a
-mechanical job), `dev-team:researcher` (read-only: Plex/Jellyfin APIs, library docs), and
-`dev-team:reviewer` (reviews every PR that changes code, scripts or CI; docs-only and
-config-only PRs skip it). A durable decision goes into an ADR first, not just the spec.
+uses the shared **dev-team** workflow from `j3ko/agent-plugins` (ADR 0015). Claude
+loads `/dev-team:orchestrate` from `dev-team@j3ko-agents`; Codex loads `$orchestrate`
+from `.agents/skills/orchestrate/` before delegating.
+
+| Role | Claude Code | Codex | Task |
+|---|---|---|---|
+| Implementer | `dev-team:implementer` | `dev-team-implementer` | One scoped spec, own worktree, opens or updates its PR |
+| Researcher | `dev-team:researcher` | `dev-team-researcher` | Read-only Plex/Jellyfin API and library documentation research |
+| Reviewer | `dev-team:reviewer` | `dev-team-reviewer` | Independent review of code, scripts and CI; docs/config-only PRs skip it |
+
+For Codex, explicitly assign separate worktrees to implementer and reviewer; native
+subagents share the parent's permissions. Host-specific model settings live in the
+upstream adapters. A durable decision goes into an ADR first, not just the spec.
 
 ## Delegation contract
 
@@ -92,6 +99,9 @@ own instructions disagree, this wins.
   `backend/`, ADR 0007), versions in `pyproject.toml`, `.release-please-manifest.json`,
   `uv.lock`/`bun.lock` (take either side and run `uv lock`/`bun install`), and
   `frontend/src/client/*.gen.ts` (regenerate instead).
+- Dev-team generated imports: `.codex/agents/dev-team-*.toml` and
+  `.agents/skills/orchestrate/`. Refresh from `j3ko/agent-plugins` with its installer,
+  review and commit the diff; do not hand-edit the imported instructions (ADR 0015).
 
 ### Research
 - Read-only: public docs and the Plex/Jellyfin API documentation. Never write to a real
@@ -114,7 +124,8 @@ own instructions disagree, this wins.
 - Frontend: React/TypeScript, Vite, TanStack Query/Router, Tailwind CSS, shadcn/ui, biome.
 - Based on `tiangolo/full-stack-fastapi-template`, minus its auth and Postgres.
 - Production: one multi-arch Docker image, built by CircleCI, published to Docker Hub (ADR 0003).
-- Skills in `.claude/skills/`, some managed by `library-skills`: run `uvx library-skills --claude`
+- Skills in `.claude/skills/` and `.agents/skills/` (Codex; `run` is shared through a
+  symlink), some managed by `library-skills`: run `uvx library-skills --claude`
   after adding or upgrading a backend dependency.
 
 ## Decision records

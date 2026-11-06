@@ -1,7 +1,7 @@
 # CI, Dependabot and tooling notes
 
-Read when a task touches `.github/workflows/`, `.circleci/`, a Dependabot PR, a lockfile, or
-a Docker build. Lessons that became decisions are ADRs (0007, 0009–0012); these are the
+Read when a task touches `.github/workflows/`, `.circleci/`, `.devcontainer/`, a Dependabot PR,
+a lockfile, or a Docker build. Lessons that became decisions are ADRs (0007, 0009–0012); these are the
 smaller ones. Add a note here when you hit a new problem.
 
 ## Pipelines
@@ -43,3 +43,35 @@ smaller ones. Add a note here when you hit a new problem.
 - The devcontainer bind-mounts the host's `~/.config/gh`, so `gh` is authenticated with the
   host's own login; no token touches the repo. Anything needing auth (closing or merging
   PRs, raw Action job logs) goes through `gh`, not unauthenticated `curl api.github.com`.
+
+## Devcontainer
+
+- The host's `~/.claude`, `~/.codex` and `~/.config/gh` are bind-mounted. A missing mount source stops the container from
+  starting, so `initializeCommand` creates them on the host if they're missing (Linux/macOS hosts only). Empty directories only make it start: `gh` still needs logging in
+  on the host. Codex's config, authentication and sessions survive rebuilds.
+- VS Code installs `openai.chatgpt@26.930.61225` alongside the other extensions. It matches the working
+  version on 2026-11-05; newer builds failed to start in the devcontainer. Keep the
+  explicit version until a replacement has been verified here. Rebuild the container
+  to apply extension and mount changes.
+- `post-create.sh` patches `ca-certificates` and pip before anything else (the emSign
+  incident, 2026-10); both steps are no-ops once the base image catches up.
+- Playwright's one-off CLI is pinned to `1.64.1` in `post-create.sh`, the same version as
+  `@playwright/test` in `frontend/package.json` and `frontend/Dockerfile.playwright`'s
+  image. On 2026-11-05, npm served `playwright@1.65.0` while its exact dependency
+  `playwright-core@1.65.0` returned 404, so an unpinned `bunx` failed during post-create.
+  A Dependabot bump of `@playwright/test` must bump this pin too.
+- The shared `run` skill lives in `.agents/skills/run`; `.claude/skills/run` links to
+  it so both Codex and Claude Code use the same instructions.
+- **Codex uses Docker isolation (ADR 0015).** `post-create.sh` installs
+  `.devcontainer/codex.toml` as `/etc/codex/config.toml`, container-wide defaults for
+  the CLI and the IDE: `danger-full-access`, with `on-request` approvals. User/project
+  settings and explicit session overrides take precedence. Restart clients and start a
+  new chat after applying it in an existing container; saved chats can keep their
+  previous permissions.
+- **Shared dev-team (ADR 0015):** post-create installs Claude's `dev-team@j3ko-agents`
+  from `j3ko/agent-plugins`; the old `dev-team@j3ko` is disabled for this project. Codex
+  reads the committed `.codex/agents/dev-team-*.toml` and `.agents/skills/orchestrate/`
+  without a marketplace install. To update that snapshot, clone agent-plugins, check out
+  the intended revision, run
+  `python3 scripts/install_codex.py --project /workspaces/gainbridge --replace` from that checkout,
+  and review the generated diff. Update Claude's plugin in the same change.

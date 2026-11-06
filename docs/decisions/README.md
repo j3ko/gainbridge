@@ -21,3 +21,4 @@ index current: a new ADR or amendment adds or edits its line in the same PR.
 | [0012](0012-pin-actions-and-scope-permissions.md) | Actions pinned to SHAs with `# vX.Y.Z`, `permissions: {}`, timeouts, no persisted credentials; zizmor enforces | any change under `.github/workflows/` |
 | [0013](0013-plex-track-gain-from-loudness.md) | Plex track gain = `-18 - loudness`; the stream's `gain` is the album gain | Plex loudness extraction, gain values |
 | [0014](0014-open-work-in-github-issues.md) | Open work is GitHub issues labelled `next`/`owner`/`check`/`proposal`/`bug`; the session reads this index, not every ADR | how work is tracked or handed off |
+| [0015](0015-shared-dev-team-plugin.md) | Shared dev-team from agent-plugins replaces the Claude-only plugin, Codex roles and skill checked in; the devcontainer isolates Codex, mounts `~/.codex` and pins the Codex extension and Playwright | delegation, agent plugins, Codex, the devcontainer |

@@ -41,7 +41,7 @@ lsof -ti:9220 -sTCP:LISTEN | xargs -r kill
 ## Driving the UI with Playwright
 
 The devcontainer's `postCreateCommand` (`.devcontainer/devcontainer.json`)
-runs `cd frontend && bunx playwright install --with-deps chromium` at
+runs `cd frontend && bunx playwright@1.64.1 install --with-deps chromium` at
 container creation, so a matching Chromium build is already installed —
 **do not re-run `playwright install`** to fix a browser-launch error; see
 the gotcha below for what the real fix usually is.

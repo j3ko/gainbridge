@@ -1,0 +1,4 @@
+# Container-only defaults for Codex CLI and the VS Code extension (ADR 0056).
+# Docker provides isolation; this container cannot create bubblewrap namespaces.
+sandbox_mode = "danger-full-access"
+approval_policy = "on-request"
