@@ -21,11 +21,20 @@
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	"forwardPorts": [9210, 9220],
 
+	// Create the bind-mount sources below on the host (Linux/macOS) before the container
+	// is created, so a fresh machine doesn't fail to start. A no-op once they exist;
+	// logging in to each tool is still a separate step.
+	"initializeCommand": ["mkdir", "-p",
+		"${localEnv:HOME}/.claude",
+		"${localEnv:HOME}/.codex",
+		"${localEnv:HOME}/.config/gh"
+	],
+
 	// Bind-mount the host's ~/.claude and ~/.codex so both coding agents' config,
 	// authentication and history survive container rebuilds, and the host's ~/.config/gh
 	// so `gh` is already authenticated in the container too, using whatever auth the host's
 	// own `gh auth login` already set up - no token ever needs to touch the repo or a chat
-	// session. All directories must exist on the host.
+	// session. initializeCommand creates the host directories.
 	"mounts": [
 		"source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
 		"source=${localEnv:HOME}/.codex,target=/home/vscode/.codex,type=bind,consistency=cached",

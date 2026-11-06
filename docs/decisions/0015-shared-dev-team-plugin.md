@@ -39,7 +39,8 @@ because on 2026-11-05 npm served `playwright@1.65.0` while its exact dependency
 - Codex can reach every file, mounted credential and network inside the container: for
   trusted repos only. User or session settings that select an inner sandbox override the
   defaults and can bring back the namespace failure.
-- `~/.codex` must exist on the host before a fresh container opens.
+- `initializeCommand` creates `~/.codex` and the other mount sources on a Linux/macOS
+  host, so a fresh machine starts without preparing them by hand.
 - Raising a pin means verifying the new version in the devcontainer first.
 - A `@playwright/test` bump also bumps post-create's pin.
 - Restart clients or start a new chat after a rebuild or a refresh of the imported files.

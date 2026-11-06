@@ -46,9 +46,9 @@ smaller ones. Add a note here when you hit a new problem.
 
 ## Devcontainer
 
-- The host's `~/.claude`, `~/.codex` and `~/.config/gh` are bind-mounted; each must exist on the host or the container
-  fails to start. Create `~/.codex` on the host before opening a fresh devcontainer if
-  it is missing; Codex's config, authentication and sessions then survive rebuilds.
+- The host's `~/.claude`, `~/.codex` and `~/.config/gh` are bind-mounted. A missing mount source stops the container from
+  starting, so `initializeCommand` creates them on the host if they're missing (Linux/macOS hosts only). Empty directories only make it start: `gh` still needs logging in
+  on the host. Codex's config, authentication and sessions survive rebuilds.
 - VS Code installs `openai.chatgpt@26.930.61225` alongside the other extensions. It matches the working
   version on 2026-11-05; newer builds failed to start in the devcontainer. Keep the
   explicit version until a replacement has been verified here. Rebuild the container
