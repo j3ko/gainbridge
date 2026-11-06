@@ -1,10 +1,14 @@
 {
-  "extraKnownMarketplaces": {
-    "j3ko": {
-      "source": { "source": "github", "repo": "j3ko/claude-plugins" }
-    }
-  },
   "enabledPlugins": {
-    "dev-team@j3ko": true
+    "dev-team@j3ko": false,
+    "dev-team@j3ko-agents": true
+  },
+  "extraKnownMarketplaces": {
+    "j3ko-agents": {
+      "source": {
+        "source": "github",
+        "repo": "j3ko/agent-plugins"
+      }
+    }
   }
 }

@@ -23,8 +23,8 @@ Decided by the owner on 2026-10-24.
   one-line list of open issues, then reads in full only the ADRs and issues its task
   touches. Agent-facing detail that only matters for some tasks (CI and Dependabot
   gotchas) lives in `docs/ci-notes.md`, read when the task touches that area.
-- Work is split with the `dev-team` plugin's agents, enabled in `.claude/settings.json`;
-  `CLAUDE.md`'s "Delegation contract" is what they read.
+- Work is split with the `dev-team` plugin's agents; `CLAUDE.md`'s "Delegation
+  contract" is what they read. The shared Claude/Codex setup now follows ADR 0015.
 
 ## Why
 
