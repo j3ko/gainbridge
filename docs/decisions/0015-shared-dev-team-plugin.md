@@ -10,8 +10,7 @@ the shared workflow from `j3ko/agent-plugins`, marketplace `j3ko-agents`. Claude
 `.claude/settings.json`; post-create installs it. Codex reads the generated roles in
 `.codex/agents/dev-team-*.toml` and the `orchestrate` skill in
 `.agents/skills/orchestrate/`, checked in unchanged from agent-plugins commit
-`9dcadc8` (its Codex output is identical to `81c6fdc`, polygraph's import). Refresh them
-with the upstream installer and review the diff; don't hand-edit them.
+`9dcadc8`. Refresh them with the upstream installer and review the diff; don't hand-edit them.
 
 The devcontainer is Codex's isolation boundary. Post-create installs the Codex CLI and
 `.devcontainer/codex.toml` as `/etc/codex/config.toml` (`sandbox_mode =
@@ -21,14 +20,13 @@ sessions survive rebuilds, and the extension is declared pinned to
 `openai.chatgpt@26.930.61225`. Playwright's one-off CLI in post-create is pinned to
 `1.64.1`, the version `frontend/package.json` locks.
 
-This is the same setup as polygraph (its ADRs 0056 and 0057), so the owner's
-devcontainers stay consistent. It amends ADR 0014's delegation line.
+The owner's other devcontainers use the same setup, so they stay consistent. It amends ADR 0014's delegation line.
 
 ## Why
 
 One maintained source for the workflow and its three roles, instead of diverging Claude
-and Codex instructions. In polygraph's container, Codex's bubblewrap sandbox can't create
-namespaces (`EPERM` under Docker's AppArmor/seccomp confinement), and OpenAI supports a
+and Codex instructions. In the owner's devcontainers, Codex's bubblewrap sandbox can't
+create namespaces (`EPERM` under Docker's AppArmor/seccomp confinement), and OpenAI supports a
 dev container as the outer boundary when the inner sandbox can't run. Newer builds of the
 Codex extension failed to start in the devcontainer on 2026-11-05; `26.930.61225` is the
 last one verified working. Playwright's one-off CLI is pinned
