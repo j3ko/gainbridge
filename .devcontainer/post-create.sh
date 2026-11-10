@@ -38,11 +38,51 @@ sudo install -m 0644 .devcontainer/codex.toml /etc/codex/config.toml
 # `git commit`, not just a documented convention someone has to remember to run.
 uv run --frozen prek install
 
-# Shared dev-team workflow (ADR 0015). Claude needs its plugin registration;
-# Codex's generated roles and orchestrate skill are already in the checkout.
-# The old plugin is disabled for this project in .claude/settings.json.
-# Network failure must not prevent container creation; rerun these commands later.
-if ! { claude plugin marketplace add j3ko/agent-plugins --scope project \
-    && claude plugin install dev-team@j3ko-agents --scope project; }; then
-  echo "post-create: shared dev-team plugin not installed; see docs/ci-notes.md" >&2
+# Shared dev-team workflow (ADR 0015). Each client registers its own plugin;
+# failure in one must not skip the other. The old Claude plugin is disabled in
+# .claude/settings.json. Network failure must not prevent container creation;
+# rerun the affected client's commands below later.
+# Claude: register the marketplace and install the plugin at user scope, so one
+# copy serves every repo and updates once; .claude/settings.json still enables it
+# here. Project registration rewrites the tracked declaration and drops autoUpdate.
+# Re-registering at user scope also drops existing user preferences, so only add
+# the marketplace when it is absent. Installing again is a no-op. A failed
+# listing/parsing step is nonfatal.
+if ! { claude_marketplace_state=$(claude plugin marketplace list --json | python3 -c '
+import json, sys
+registered = any(item["name"] == "j3ko-agents" for item in json.load(sys.stdin))
+print("registered" if registered else "missing")') \
+    && { if [ "$claude_marketplace_state" = missing ]; then
+      claude plugin marketplace add j3ko/agent-plugins --scope user
+    fi; } \
+    && claude plugin install dev-team@j3ko-agents --scope user; }; then
+  echo "post-create: Claude dev-team plugin not installed; see docs/ci-notes.md" >&2
 fi
+
+# User-scope registration writes the marketplace into the user settings without
+# autoUpdate, so Claude never refreshes it and the project's autoUpdate: true has
+# no effect. There is no CLI flag for it: turn it on in the user settings, unless
+# the entry is missing or already sets autoUpdate either way.
+if ! python3 - "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json" <<'EOF'
+import json, sys
+from pathlib import Path
+path = Path(sys.argv[1])
+if not path.exists():
+    sys.exit(0)
+settings = json.loads(path.read_text())
+entry = settings.get("extraKnownMarketplaces", {}).get("j3ko-agents")
+if isinstance(entry, dict) and "autoUpdate" not in entry:
+    entry["autoUpdate"] = True
+    path.write_text(json.dumps(settings, indent=2) + "\n")
+EOF
+then
+  echo "post-create: could not turn on Claude auto-update for j3ko-agents; see docs/ci-notes.md" >&2
+fi
+
+if ! { codex plugin marketplace add j3ko/agent-plugins \
+    && codex plugin add dev-team@j3ko-agents; }; then
+  echo "post-create: Codex dev-team plugin not installed; see docs/ci-notes.md" >&2
+fi
+
+echo "post-create: In Codex CLI, review and trust the dev-team SessionStart hook in /hooks, then fully restart Codex."
+echo "post-create: Fully restart again after the hook reports role changes. Updated plugin bundles may need renewed trust."
