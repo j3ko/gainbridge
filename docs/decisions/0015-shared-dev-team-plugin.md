@@ -8,9 +8,16 @@ Use the shared workflow from `j3ko/agent-plugins`, marketplace `j3ko-agents`.
 Claude enables `dev-team@j3ko-agents` and disables the old `dev-team@j3ko` at project
 scope in `.claude/settings.json`. The project marketplace declaration sets
 `autoUpdate: true`. Post-create registers a missing Claude marketplace at user scope
-and installs the plugin at project scope. Existing registrations are reused: Claude
+and installs the plugin at user scope. Existing registrations are reused: Claude
 2.1.319 marketplace registration rewrites the target declaration and drops its update
 preference (verified 2026-11-09).
+The plugin is installed once at user scope: a project-scope install keeps its own
+copy and version per checkout, and those copies drifted apart. `.claude/settings.json`
+still enables it here; installing again is a no-op.
+User-scope registration leaves `autoUpdate` out of `~/.claude/settings.json`, so
+the project's `autoUpdate: true` had no effect; post-create sets it on that user
+entry unless the entry already sets it either way. Plugin auto-update runs in the
+background up to 10 minutes after Claude starts and loads at the next start.
 
 Migration: 2026-11-09. Codex CLI uses the plugin skill and personal roles managed by
 its trusted `SessionStart` hook in `$CODEX_HOME/agents` (default `~/.codex/agents`).

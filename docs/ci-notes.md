@@ -70,9 +70,12 @@ smaller ones. Add a note here when you hit a new problem.
   previous permissions.
 - **Shared dev-team (ADR 0015):** post-create installs `dev-team@j3ko-agents` for
   both clients; the old `dev-team@j3ko` stays disabled for this project. Claude's
-  marketplace is registered at user scope only when missing, while the plugin is
-  installed at project scope. This preserves the tracked `autoUpdate: true` and
-  existing user marketplace preferences. Claude checks for updates automatically.
+  marketplace is registered at user scope only when missing, and the plugin is
+  installed at user scope too, so every checkout shares one copy;
+  `.claude/settings.json` enables it here. Post-create then sets `autoUpdate: true` on
+  the user marketplace entry, which user-scope registration leaves out. This preserves
+  existing user marketplace preferences. Claude checks for updates in the background up
+  to 10 minutes after it starts and loads them at the next start.
   Codex CLI loads the plugin skill; its trusted startup hook maintains personal roles
   in `$CODEX_HOME/agents` (default `~/.codex/agents`). Skill and role snapshots are no
   longer checked in. The mounted home preserves plugin cache/data and role files.
@@ -83,6 +86,7 @@ smaller ones. Add a note here when you hit a new problem.
   container creation. To retry Claude, skip marketplace registration when
   `claude plugin marketplace list --json` already lists `j3ko-agents`; otherwise add
   it with `claude plugin marketplace add j3ko/agent-plugins --scope user`, then run
-  `claude plugin install dev-team@j3ko-agents --scope project`. For Codex, run
+  `claude plugin install dev-team@j3ko-agents --scope user`, and add `"autoUpdate": true`
+  to `extraKnownMarketplaces.j3ko-agents` in `~/.claude/settings.json`. For Codex, run
   `codex plugin marketplace add j3ko/agent-plugins` and
   `codex plugin add dev-team@j3ko-agents` in the devcontainer. Trust remains manual.
