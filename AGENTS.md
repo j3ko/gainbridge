@@ -42,8 +42,8 @@ Read on demand, not up front:
 
 The main session keeps design, ADR decisions and the discussion with the owner, and
 uses the shared **dev-team** workflow from `j3ko/agent-plugins` (ADR 0015). Claude
-loads `/dev-team:orchestrate` from `dev-team@j3ko-agents`; Codex loads `$orchestrate`
-from `.agents/skills/orchestrate/` before delegating.
+loads `/dev-team:orchestrate` from `dev-team@j3ko-agents`; Codex CLI uses the installed
+plugin’s `orchestrate` skill and personal roles managed by its trusted startup hook.
 
 | Role | Claude Code | Codex | Task |
 |---|---|---|---|
@@ -54,6 +54,8 @@ from `.agents/skills/orchestrate/` before delegating.
 For Codex, explicitly assign separate worktrees to implementer and reviewer; native
 subagents share the parent's permissions. Host-specific model settings live in the
 upstream adapters. A durable decision goes into an ADR first, not just the spec.
+Review and trust the Codex startup hook in `/hooks`, including after plugin bundle
+changes, and fully restart Codex after reported role changes (ADR 0015).
 
 ## Delegation contract
 
@@ -99,9 +101,9 @@ own instructions disagree, this wins.
   `backend/`, ADR 0007), versions in `pyproject.toml`, `.release-please-manifest.json`,
   `uv.lock`/`bun.lock` (take either side and run `uv lock`/`bun install`), and
   `frontend/src/client/*.gen.ts` (regenerate instead).
-- Dev-team generated imports: `.codex/agents/dev-team-*.toml` and
-  `.agents/skills/orchestrate/`. Refresh from `j3ko/agent-plugins` with its installer,
-  review and commit the diff; do not hand-edit the imported instructions (ADR 0015).
+- Dev-team skills and role sources belong to `j3ko/agent-plugins`; change them upstream.
+  Do not check imported copies into this repo. Codex's trusted startup hook maintains
+  personal roles in `$CODEX_HOME/agents` (default `~/.codex/agents`, ADR 0015).
 
 ### Research
 - Read-only: public docs and the Plex/Jellyfin API documentation. Never write to a real

@@ -8,7 +8,8 @@
       "source": {
         "source": "github",
         "repo": "j3ko/agent-plugins"
-      }
+      },
+      "autoUpdate": true
     }
   }
 }
