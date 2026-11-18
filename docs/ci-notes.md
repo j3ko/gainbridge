@@ -49,10 +49,9 @@ smaller ones. Add a note here when you hit a new problem.
 - The host's `~/.claude`, `~/.codex` and `~/.config/gh` are bind-mounted. A missing mount source stops the container from
   starting, so `initializeCommand` creates them on the host if they're missing (Linux/macOS hosts only). Empty directories only make it start: `gh` still needs logging in
   on the host. Codex's config, authentication and sessions survive rebuilds.
-- VS Code installs `openai.chatgpt@26.930.61225` alongside the other extensions. It matches the working
-  version on 2026-11-05; newer builds failed to start in the devcontainer. Keep the
-  explicit version until a replacement has been verified here. Rebuild the container
-  to apply extension and mount changes.
+- VS Code installs `openai.chatgpt` alongside the other extensions. The devcontainer
+  specifies the extension ID without a version. Rebuild the container to apply extension
+  and mount changes.
 - `post-create.sh` patches `ca-certificates` and pip before anything else (the emSign
   incident, 2026-10); both steps are no-ops once the base image catches up.
 - Playwright's one-off CLI is pinned to `1.64.1` in `post-create.sh`, the same version as
