@@ -29,15 +29,14 @@ Codex CLI, open `/hooks`, select `SessionStart`, review the dev-team synchroniza
 command and trust it. Fully restart Codex to run the hook, then fully restart again
 after it reports installed or updated roles. Updated plugin bundles can require
 renewed trust. Provisioning never grants hook trust. Locally edited roles are preserved
-and conflicts are reported for review. This migration targets the CLI; the pinned IDE
-extension remains unchanged.
+and conflicts are reported for review. This migration targets the CLI.
 
 The devcontainer is Codex's isolation boundary. Post-create installs the Codex CLI and
 `.devcontainer/codex.toml` as `/etc/codex/config.toml` (`sandbox_mode =
 "danger-full-access"`, `approval_policy = "on-request"`), defaults for both the CLI and
 the VS Code extension. The host's `~/.codex` is bind-mounted so Codex's config, auth and
-sessions, plugin cache/data and personal roles survive rebuilds, and the extension is declared pinned to
-`openai.chatgpt@26.930.61225`. Playwright's one-off CLI in post-create is pinned to
+sessions, plugin cache/data and personal roles survive rebuilds. The devcontainer
+declares `openai.chatgpt` without a version. Playwright's one-off CLI in post-create is pinned to
 `1.64.1`, the version `frontend/package.json` locks.
 
 It amends ADR 0014's delegation line.
@@ -47,10 +46,13 @@ It amends ADR 0014's delegation line.
 One maintained source for the workflow and its three roles, instead of diverging Claude
 and Codex instructions. Codex's bubblewrap sandbox was seen failing to create namespaces
 in this kind of devcontainer (`EPERM` under Docker's AppArmor/seccomp confinement), and OpenAI supports a
-dev container as the outer boundary when the inner sandbox can't run. Newer builds of the
-Codex extension failed to start in the devcontainer on 2026-11-05; `26.930.61225` is the
-last one verified working. Playwright's one-off CLI is pinned
-because on 2026-11-05 npm served `playwright@1.65.0` while its exact dependency
+dev container as the outer boundary when the inner sandbox can't run.
+
+The devcontainer originally used Codex extension version `26.930.61225` because newer
+builds failed to start on 2026-11-05. On 2026-11-17, the owner approved removal of the
+pin after a successful startup with the latest release.
+
+Playwright's one-off CLI is pinned because on 2026-11-05 npm served `playwright@1.65.0` while its exact dependency
 `playwright-core@1.65.0` returned 404, so an unpinned `bunx playwright` failed post-create.
 
 ## Consequences
@@ -63,7 +65,6 @@ because on 2026-11-05 npm served `playwright@1.65.0` while its exact dependency
   defaults and can bring back the namespace failure.
 - `initializeCommand` creates `~/.codex` and the other mount sources on a Linux/macOS
   host, so a fresh machine starts without preparing them by hand.
-- Raising a pin means verifying the new version in the devcontainer first.
 - A `@playwright/test` bump also bumps post-create's pin.
 - Existing containers can install the Codex plugin with `codex plugin marketplace add
   j3ko/agent-plugins` and `codex plugin add dev-team@j3ko-agents`, without rebuilding.

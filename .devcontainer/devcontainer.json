@@ -55,8 +55,7 @@
 				"ms-python.python",
 				"ms-python.vscode-pylance",
 				"ms-python.debugpy",
-				// Keep the working version: newer builds fail to start in this container (ADR 0015).
-				"openai.chatgpt@26.930.61225"
+				"openai.chatgpt"
 			]
 		}
 	}
